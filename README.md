@@ -68,3 +68,5 @@ M_elem_prod(1,2)= 0
 
 This is being *created* on a **Saturday** 😪
 -Another trial 
+
+Some correction using the first way, wait for more
