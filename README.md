@@ -32,7 +32,7 @@ $$
 
 ### Input Vector
 $$
-\mathbf{u} = \begin{bmatrix} u_1 \\ u__2 \end{bmatrix}
+\mathbf{u} = \begin{bmatrix} u_1 \\ u_2 \end{bmatrix}
 $$
 
 ### Measurement Vector
