@@ -1,4 +1,5 @@
-# Planar Quadrotor - Linearized State-Space Model
+# Planar Quadrotor 
+- Linearized State-Space Model
 
 ## How We Got These Matrices
 
@@ -65,3 +66,4 @@ D = \begin{bmatrix}
 0 & 0 \\
 \frac{1}{m} & \frac{1}{m}
 \end{bmatrix}
+$$
