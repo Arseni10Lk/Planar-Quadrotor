@@ -51,13 +51,37 @@ $$
 ## System Definitions
 
 ### State Vector (6 elements)
-![State Vector](State_variables.png)
+$$
+\mathbf{x} = 
+\begin{Bmatrix}
+x \\
+\dot{x} \\
+y \\
+\dot{y} \\
+\theta \\
+\dot{\theta}
+\end{Bmatrix}
+$$
 
 ### Input Vector (2 elements)
-![Input Vector](Input_Variables.png)
+$$
+\mathbf{u} = 
+\begin{Bmatrix}
+u_1 \\
+u_2
+\end{Bmatrix}
+$$
 
 ### Measurement Vector (4 elements - from IMU + Altitude Sensor)
-![Measurement Vector](Measurement_Vector.png)
+$$
+\mathbf{z} = 
+\begin{bmatrix}
+y \\
+\dot{\theta} \\
+\ddot{x} \\
+\ddot{y}
+\end{bmatrix}
+$$
 
 ## Linearized System Matrices
 
