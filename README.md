@@ -1,5 +1,5 @@
 # Planar Quadrotor 
-- Linearized State-Space Model
+## Linearized State-Space Model
 
 ## Project Overview
 We are using an Extended Kalman Filter (EKF) to estimate the state of a 2D quadrotor using noisy sensor measurements. The EKF combines physics-based predictions with real sensor data to provide accurate state estimates.
@@ -34,7 +34,6 @@ Where:
 We linearize the system around $\theta = 0$ (hover/near-level flight) because:
 - The EKF requires linear system matrices
 - $\theta = 0$ provides a stable operating point for linearization
-- Small-angle approximations are valid near this point: $\sin\theta \approx \theta$, $\cos\theta \approx 1$
 
 The linearization is done by computing the Jacobian matrices - taking partial derivatives of each equation with respect to all state variables and control inputs.
 
@@ -58,7 +57,7 @@ $$
 ![Input Vector](Input_Variables.png)
 
 ### Measurement Vector (4 elements - from IMU + Altitude Sensor)
-Y = ![Measurement Vector](Measurement_Vector.png)
+Y =![Measurement Vector](Measurement_Vector.png)
 
 ## Linearized System Matrices
 
@@ -96,7 +95,7 @@ C = \begin{bmatrix}
 \end{bmatrix}
 $$
 
-### D Matrix - Direct Feedthrough ($4 \times 2$)
+### D Matrix - D ($4 \times 2$)
 $$
 D = \begin{bmatrix}
 0 & 0 \\
@@ -110,10 +109,12 @@ $$
 
 **Partial derivatives at $\theta = 0$:**
 - $\frac{\partial \ddot{x}}{\partial \theta} = -\frac{u_1 + u_2}{m}$ (Tilting creates horizontal acceleration)
+
 - $\frac{\partial \ddot{y}}{\partial u_1} = \frac{1}{m}$, $\frac{\partial \ddot{y}}{\partial u_2} = \frac{1}{m}$ (Rotors create vertical acceleration)
+
 - $\frac{\partial \ddot{\theta}}{\partial u_1} = \frac{r}{I}$, $\frac{\partial \ddot{\theta}}{\partial u_2} = -\frac{r}{I}$ (Differential thrust creates rotation)
 
-## Gravity Compensation
+## Gravity 
 
 **Important**: Gravity (`g = 9.81 m/s²`) appears in the vertical acceleration equation and isnt ignored.
 
