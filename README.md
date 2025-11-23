@@ -53,23 +53,23 @@ $$
 ### State Vector (6 elements)
 $$
 \mathbf{x} = 
-\begin{Bmatrix}
+\begin{bmatrix}
 x \\
 \dot{x} \\
 y \\
 \dot{y} \\
 \theta \\
 \dot{\theta}
-\end{Bmatrix}
+\end{bmatrix}
 $$
 
 ### Input Vector (2 elements)
 $$
 \mathbf{u} = 
-\begin{Bmatrix}
+\begin{bmatrix}
 u_1 \\
 u_2
-\end{Bmatrix}
+\end{bmatrix}
 $$
 
 ### Measurement Vector (4 elements - from IMU + Altitude Sensor)
