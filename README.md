@@ -57,7 +57,7 @@ $$
 ![Input Vector](Input_Variables.png)
 
 ### Measurement Vector (4 elements - from IMU + Altitude Sensor)
-Y =![Measurement Vector](Measurement_Vector.png)
+![Measurement Vector](Measurement_Vector.png)
 
 ## Linearized System Matrices
 
