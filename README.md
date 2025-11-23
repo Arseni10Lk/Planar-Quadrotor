@@ -74,7 +74,7 @@ $$
 
 ### Measurement Vector (4 elements - from IMU + Altitude Sensor)
 $$
-\mathbf{z} = 
+\mathbf{y} = 
 \begin{bmatrix}
 y \\
 \dot{\theta} \\
