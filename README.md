@@ -1,17 +1,18 @@
 # Planar Quadrotor 
-## Linear State-Space Equations Formulation 
 
-### Project Overview
+## Project Overview
 We are using an Extended Kalman Filter (EKF) to estimate the state of a 2D quadrotor using noisy sensor measurements. The EKF combines physics-based predictions with real sensor data to provide accurate state estimates.
 
 ![Planar Quadrotor Diagram](Planar_Quadrotor.png)
 
-## The Challenge
+## Linear State-Space Equations Formulation 
+
+### The Challenge
 - Sensors are noisy: IMU and altitude sensors provide unreliable, jittery measurements
 - Physics is complex: Real quadrotor dynamics are nonlinear and complicated  
 - Solution: Combine sensor data with mathematical models to get better estimates than either could provide alone
 
-## Nonlinear System Equations
+### Nonlinear System Equations
 The quadrotor's movement is described by these nonlinear equations:
 
 $$
@@ -29,23 +30,23 @@ Where:
 - g: gravitational acceleration
 - u₁, u₂: rotor thrust forces
 
-## Linearization Process
+### Linearization Process
 We linearize the system by computing Jacobian matrices - taking partial derivatives of each equation with respect to all state variables and control inputs. This creates a linear approximation of the system dynamics that can be used for state estimation.
 
-## State-Space Representation
-The standard linearized system of state-space equations:
+### State-Space Representation
+The IMU measures total acceleration including gravity, so we explicitly subtract $g$ when processing the $\ddot{y}$ measurement. The standard linearized system of state-space equations:
 
 $$
 \begin{aligned}
-\dot{\mathbf{x}} &= A\mathbf{x} + B\mathbf{u} + G \\
-\mathbf{y} &= C\mathbf{x} + D\mathbf{u} + Gx
+\dot{\mathbf{x}} &= A\mathbf{x} + B\mathbf{u} + G_x \\
+\mathbf{y} &= C\mathbf{x} + D\mathbf{u} + G_y
 \end{aligned}
 $$
 
 
 Where G and Gx contain constant terms like gravity.
 
-## System Definitions
+### System Definitions
 
 ### State Vector (6 elements)
 $$
@@ -69,6 +70,8 @@ u_2
 \end{bmatrix}
 $$
 ### Observation Vector (4 elements)
+We assume that we have an IMU, which measures linear accelerations and angular velocity, and an altitude sensor, which measures altitude.
+
 $$
 \mathbf{y} = 
 \begin{bmatrix}
@@ -79,61 +82,61 @@ y \\
 \end{bmatrix}
 $$
 
-## Linearized System Matrices
+### Linearized System Matrices
 
-### A Matrix - System Dynamics (6×6)
+* **A Matrix - System Dynamics (6×6):**
 
 $$
 A = \begin{bmatrix}
 0 & 1 & 0 & 0 & 0 & 0 \\
-0 & 0 & 0 & 0 & -cos(θ)(u₁+u₂)/m & 0 \\
+0 & 0 & 0 & 0 & \frac{-cos(θ)(u₁+u₂)}{m} & 0 \\
 0 & 0 & 0 & 1 & 0 & 0 \\
-0 & 0 & 0 & 0 & -sin(θ)(u₁+u₂)/m & 0 \\
+0 & 0 & 0 & 0 & \frac{-sin(θ)(u₁+u₂)}{m} & 0 \\
 0 & 0 & 0 & 0 & 0 & 1 \\
 0 & 0 & 0 & 0 & 0 & 0
 \end{bmatrix}
 $$
-### B Matrix - Control Input (6×2)
+* **B Matrix - Control Input (6×2):**
 
 $$
 B = \begin{bmatrix}
 0 & 0 \\
--sin(θ)/m & -sin(θ)/m \\
+\frac{-sin(θ)}{m} & \frac{-sin(θ)}{m} \\
 0 & 0 \\
-cos(θ)/m & cos(θ)/m \\
+\frac{cos(θ)}{m} & \frac{cos(θ)}{m} \\
 0 & 0 \\
-r/I & -r/I
+\frac{r}{I} & \frac{-r}{I}
 \end{bmatrix}
 $$
 
-### C Matrix - Measurement (4×6)
+* **C Matrix - Measurement (4×6):**
 
 $$
 C = \begin{bmatrix}
 0 & 0 & 1 & 0 & 0 & 0 \\
 0 & 0 & 0 & 0 & 0 & 1 \\
-0 & 0 & 0 & 0 & -cos(θ)(u₁+u₂)/m & 0 \\
-0 & 0 & 0 & 0 & -sin(θ)(u₁+u₂)/m & 0
+0 & 0 & 0 & 0 & \frac{-cos(θ)(u₁+u₂)}{m} & 0 \\
+0 & 0 & 0 & 0 & \frac{-sin(θ)(u₁+u₂)}{m} & 0
 \end{bmatrix}
 $$
 
-### D Matrix  (4×2)
+* **D Matrix  (4×2):**
 
 $$
 D = \begin{bmatrix}
 0 & 0 \\
 0 & 0 \\
--sin(θ)/m & -sin(θ)/m \\
-cos(θ)/m & cos(θ)/m]
+\frac{-sin(θ)}{m} & \frac{-sin(θ)}{m} \\
+\frac{cos(θ)}{m} & \frac{cos(θ)}{m}]
 \end{bmatrix}
 $$
 
 ### Constant Terms
 
-**System constant vector G:**  
+* **Gravity vector for x $G_x$:**  
 
 $$
-G = \begin{bmatrix}
+G_x = \begin{bmatrix}
 0 \\
 0 \\
 0 \\
@@ -144,17 +147,17 @@ G = \begin{bmatrix}
 $$
 
 
-**Measurement constant vector H:**  
+* **Gravity vector for y $G_y$:**  
 
 $$
-H = \begin{bmatrix}
+G_y = \begin{bmatrix}
 0 \\
 0 \\
 0 \\
 -g
 \end{bmatrix}
 $$
-## Key Linearization Results
+### Key Linearization Results
 
 **Partial derivatives:**  
 - $\frac{\partial \ddot{x}}{\partial \theta} = -\frac{\cos\theta}{m}(u_1 + u_2)$
@@ -166,7 +169,4 @@ $$
 - $\frac{\partial \ddot{y}}{\partial u_1} = \frac{\cos\theta}{m}$, $\frac{\partial \ddot{y}}{\partial u_2} = \frac{\cos\theta}{m}$
 
 - $\frac{\partial \ddot{\theta}}{\partial u_1} = \frac{r}{I}$, $\frac{\partial \ddot{\theta}}{\partial u_2} = -\frac{r}{I}$
-
-## Notes
-- The IMU measures total acceleration including gravity, so we explicitly subtract `g` when processing the `ÿ` measurement
 
