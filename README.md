@@ -1,17 +1,17 @@
 # Planar Quadrotor 
-## Linearized State-Space Model
+## Linear State-Space Equations Formulation 
 
-## Project Overview
+### Project Overview
 We are using an Extended Kalman Filter (EKF) to estimate the state of a 2D quadrotor using noisy sensor measurements. The EKF combines physics-based predictions with real sensor data to provide accurate state estimates.
-![Planar Quadrotor Diagram](Planar_Quadrotor.png) 
+
+![Planar Quadrotor Diagram](Planar_Quadrotor.png)
 
 ## The Challenge
-- **Sensors are noisy**: IMU and altitude sensors provide unreliable, jittery measurements
-- **Physics is complex**: Real quadrotor dynamics are nonlinear and complicated
-- **Solution**: Combine sensor data with mathematical models to get better estimates than either could provide alone
+- Sensors are noisy: IMU and altitude sensors provide unreliable, jittery measurements
+- Physics is complex: Real quadrotor dynamics are nonlinear and complicated  
+- Solution: Combine sensor data with mathematical models to get better estimates than either could provide alone
 
 ## Nonlinear System Equations
-
 The quadrotor's movement is described by these nonlinear equations:
 
 $$
@@ -23,30 +23,27 @@ I\ddot{\theta} &= r(u_1 - u_2)
 $$
 
 Where:
-- $m$: mass of the quadrotor
-- $I$: moment of inertia
-- $r$: distance from center to rotors
-- $g$: gravitational acceleration
-- $u_1, u_2$: rotor thrust forces
+- m: mass of the quadrotor
+- I: moment of inertia  
+- r: distance from center to rotors
+- g: gravitational acceleration
+- u₁, u₂: rotor thrust forces
 
 ## Linearization Process
-
-We linearize the system around $\theta = 0$ (hover/near-level flight) because:
-- The EKF requires linear system matrices
-- $\theta = 0$ provides a stable operating point for linearization
-
-The linearization is done by computing the Jacobian matrices - taking partial derivatives of each equation with respect to all state variables and control inputs.
+We linearize the system by computing Jacobian matrices - taking partial derivatives of each equation with respect to all state variables and control inputs. This creates a linear approximation of the system dynamics that can be used for state estimation.
 
 ## State-Space Representation
-
-The standard state-space form is:
+The standard linearized system of state-space equations:
 
 $$
 \begin{aligned}
-\dot{\mathbf{x}} &= A\mathbf{x} + B\mathbf{u} \\
-\mathbf{y} &= C\mathbf{x} + D\mathbf{u}
+\dot{\mathbf{x}} &= A\mathbf{x} + B\mathbf{u} + G \\
+\mathbf{y} &= C\mathbf{x} + D\mathbf{u} + H
 \end{aligned}
 $$
+
+
+Where G and H contain constant terms like gravity.
 
 ## System Definitions
 
@@ -63,7 +60,7 @@ y \\
 \end{bmatrix}
 $$
 
-### Input Vector (2 elements)
+### Input Vector (2 elements) 
 $$
 \mathbf{u} = 
 \begin{bmatrix}
@@ -71,8 +68,7 @@ u_1 \\
 u_2
 \end{bmatrix}
 $$
-
-### Measurement Vector (4 elements - from IMU + Altitude Sensor)
+### Observation Vector (4 elements)
 $$
 \mathbf{y} = 
 \begin{bmatrix}
@@ -85,63 +81,89 @@ $$
 
 ## Linearized System Matrices
 
-### A Matrix - System Dynamics ($6 \times 6$)
+### A Matrix - System Dynamics (6×6)
+
 $$
 A = \begin{bmatrix}
 0 & 1 & 0 & 0 & 0 & 0 \\
-0 & 0 & 0 & 0 & -\frac{u_1+u_2}{m} & 0 \\
+0 & 0 & 0 & 0 & -cos(θ)(u₁+u₂)/m & 0 \\
 0 & 0 & 0 & 1 & 0 & 0 \\
-0 & 0 & 0 & 0 & 0 & 0 \\
+0 & 0 & 0 & 0 & -sin(θ)(u₁+u₂)/m & 0 \\
 0 & 0 & 0 & 0 & 0 & 1 \\
 0 & 0 & 0 & 0 & 0 & 0
 \end{bmatrix}
 $$
+### B Matrix - Control Input (6×2)
 
-### B Matrix - Control Input ($6 \times 2$)
 $$
 B = \begin{bmatrix}
 0 & 0 \\
+-sin(θ)/m & -sin(θ)/m \\
 0 & 0 \\
+cos(θ)/m & cos(θ)/m \\
 0 & 0 \\
-\frac{1}{m} & \frac{1}{m} \\
-0 & 0 \\
-\frac{r}{I} & -\frac{r}{I}
+r/I & -r/I
 \end{bmatrix}
 $$
 
-### C Matrix - Measurement ($4 \times 6$)
+### C Matrix - Measurement (4×6)
+
 $$
 C = \begin{bmatrix}
 0 & 0 & 1 & 0 & 0 & 0 \\
 0 & 0 & 0 & 0 & 0 & 1 \\
-0 & 0 & 0 & 0 & -\frac{u_1+u_2}{m} & 0 \\
-0 & 0 & 0 & 0 & 0 & 0
+0 & 0 & 0 & 0 & -cos(θ)(u₁+u₂)/m & 0 \\
+0 & 0 & 0 & 0 & -sin(θ)(u₁+u₂)/m & 0
 \end{bmatrix}
 $$
 
-### D Matrix - D ($4 \times 2$)
+### D Matrix  (4×2)
+
 $$
 D = \begin{bmatrix}
 0 & 0 \\
 0 & 0 \\
-0 & 0 \\
-\frac{1}{m} & \frac{1}{m}
+-sin(θ)/m & -sin(θ)/m \\
+cos(θ)/m & cos(θ)/m]
 \end{bmatrix}
 $$
 
+### Constant Terms
+
+**System constant vector G:**  
+
+$$
+G = \begin{bmatrix}
+0 \\
+0 \\
+0 \\
+-g \\
+0 \\
+0
+\end{bmatrix}
+$$
+
+
+**Measurement constant vector H:**  
+
+$$
+H = \begin{bmatrix}
+0 \\
+0 \\
+0 \\
+-g
+\end{bmatrix}
+$$
 ## Key Linearization Results
 
-**Partial derivatives at $\theta = 0$:**
-- $\frac{\partial \ddot{x}}{\partial \theta} = -\frac{u_1 + u_2}{m}$ (Tilting creates horizontal acceleration)
+**Partial derivatives:**  
+- $\frac{\partial \ddot{x}}{\partial \theta} = -\frac{\cos\theta}{m}(u_1 + u_2)$
+  
+- $\frac{\partial \ddot{y}}{\partial \theta} = -\frac{\sin\theta}{m}(u_1 + u_2)$
+  
+- $\frac{\partial \ddot{x}}{\partial u_1} = -\frac{\sin\theta}{m}$, $\frac{\partial \ddot{x}}{\partial u_2} = -\frac{\sin\theta}{m}$
+  
+- $\frac{\partial \ddot{y}}{\partial u_1} = \frac{\cos\theta}{m}$, $\frac{\partial \ddot{y}}{\partial u_2} = \frac{\cos\theta}{m}$
 
-- $\frac{\partial \ddot{y}}{\partial u_1} = \frac{1}{m}$, $\frac{\partial \ddot{y}}{\partial u_2} = \frac{1}{m}$ (Rotors create vertical acceleration)
+- $\frac{\partial \ddot{\theta}}{\partial u_1} = \frac{r}{I}$, $\frac{\partial \ddot{\theta}}{\partial u_2} = -\frac{r}{I}$
 
-- $\frac{\partial \ddot{\theta}}{\partial u_1} = \frac{r}{I}$, $\frac{\partial \ddot{\theta}}{\partial u_2} = -\frac{r}{I}$ (Differential thrust creates rotation)
-
-## Gravity 
-
-**Important**: Gravity (`g = 9.81 m/s²`) appears in the vertical acceleration equation and isnt ignored.
-
-- **In the physics**: `ÿ = (u₁ + u₂)/m - g`
-- **In implementation**: The `-g` term is handled as a constant offset in the vertical acceleration measurement
-- The IMU measures total acceleration including gravity, so we explicitly subtract `g` when processing the `ÿ` measurement
