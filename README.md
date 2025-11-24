@@ -38,12 +38,12 @@ The standard linearized system of state-space equations:
 $$
 \begin{aligned}
 \dot{\mathbf{x}} &= A\mathbf{x} + B\mathbf{u} + G \\
-\mathbf{y} &= C\mathbf{x} + D\mathbf{u} + H
+\mathbf{y} &= C\mathbf{x} + D\mathbf{u} + Gx
 \end{aligned}
 $$
 
 
-Where G and H contain constant terms like gravity.
+Where G and Gx contain constant terms like gravity.
 
 ## System Definitions
 
@@ -166,4 +166,7 @@ $$
 - $\frac{\partial \ddot{y}}{\partial u_1} = \frac{\cos\theta}{m}$, $\frac{\partial \ddot{y}}{\partial u_2} = \frac{\cos\theta}{m}$
 
 - $\frac{\partial \ddot{\theta}}{\partial u_1} = \frac{r}{I}$, $\frac{\partial \ddot{\theta}}{\partial u_2} = -\frac{r}{I}$
+
+## Notes
+- The IMU measures total acceleration including gravity, so we explicitly subtract `g` when processing the `ÿ` measurement
 
