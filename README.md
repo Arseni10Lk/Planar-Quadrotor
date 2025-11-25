@@ -70,15 +70,15 @@ u_2
 \end{bmatrix}
 $$
 ### Observation Vector (4 elements)
-We assume that we have an IMU, which measures linear accelerations and angular velocity, and an altitude sensor, which measures altitude.
+We assume that we have an IMU, which measures linear accelerations and angular velocity, and an altitude sensor, which measures altitude. However, accelarations are measured relative to the body cor
 
 $$
 \mathbf{y} = 
 \begin{bmatrix}
 y \\
 \dot{\theta} \\
-\ddot{x} \\
-\ddot{y}
+\ddot{x_b} \\
+\ddot{y_b}
 \end{bmatrix}
 $$
 
@@ -131,6 +131,21 @@ D = \begin{bmatrix}
 \end{bmatrix}
 $$
 
+### F and H matrices
+
+$$F = I + A \Delta t$$, where I symbolizes the old state and A symbolizes the change of it.
+
+$$
+F = \begin{bmatrix} 
+1 & \Delta t & 0 & 0 & 0 & 0 \\
+0 & 1 & 0 & 0 & \frac{-cos(θ)(u₁+u₂)}{m} \Delta t & 0 \\
+0 & 0 & 1 & \Delta t & 0 & 0 \\
+0 & 1 & 0 & 0 & \frac{-sin(θ)(u₁+u₂)}{m} \Delta t & 0 \\
+0 & 0 & 0 & 0 & 1 & \Delta t \\
+0 & 0 & 0 & 0 & 0 & 1 \\
+\end{bmatrix}
+$$
+
 ### Constant Terms
 
 * **Gravity vector for x $G_x$:**  
@@ -165,6 +180,7 @@ $$
 - $\frac{\partial \ddot{y}}{\partial \theta} = -\frac{\sin\theta}{m}(u_1 + u_2)$
   
 - $\frac{\partial \ddot{x}}{\partial u_1} = -\frac{\sin\theta}{m}$, $\frac{\partial \ddot{x}}{\partial u_2} = -\frac{\sin\theta}{m}$
+  
   
 - $\frac{\partial \ddot{y}}{\partial u_1} = \frac{\cos\theta}{m}$, $\frac{\partial \ddot{y}}{\partial u_2} = \frac{\cos\theta}{m}$
 
