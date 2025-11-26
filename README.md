@@ -34,21 +34,23 @@ Where:
 We linearize the system by computing Jacobian matrices - taking partial derivatives of each equation with respect to all state variables and control inputs. This creates a linear approximation of the system dynamics that can be used for state estimation.
 
 $$
-x_k = F x_{k-1} + B u_k + w_k
+x_k = F x_{k-1} + Bk u_k + w_k
 $$
+
+- $$B_k = B_s . \Delta T$$
+- $$W_k$$ ,Is process noise. This comes from imperfect physics modeling, eg, Unmodeled aerodynamics, Parameter uncertainties.
 
 ### State-Space Representation
 The IMU measures total acceleration including gravity, so we explicitly subtract $g$ when processing the $\ddot{y}$ measurement. The standard linearized system of state-space equations:
 
 $$
 \begin{aligned}
-\dot{\mathbf{x}} &= A\mathbf{x} + B\mathbf{u} + G_x \\
+\dot{\mathbf{x}} &= A\mathbf{x} + B_s\mathbf{u} + G_x \\
 \mathbf{y} &= C\mathbf{x} + D\mathbf{u} + G_y
 \end{aligned}
 $$
 
-
-Where G_y and G_x contain constant terms like gravity.
+Where $$Gy$$ and $$Gx$$ contain constant terms like gravity.
 
 ### System Definitions
 
@@ -75,7 +77,11 @@ u_2
 $$
 
 ### Observation Vector (4 elements)
-We assume that we have an IMU, which measures linear accelerations and angular velocity, and an altitude sensor, which measures altitude. However, accelerations are measured relative to the body
+We have two sensors:
+- **Altitude sensor**: measures vertical position $$y$$ 
+- **IMU**: measures pitch angle $$\theta$$ and angular velocity  $$\dot{\theta}$$
+
+ Although the IMU also measures linear accelerations, we are not using them directly in our observation vector. We only use the direct state measurements $$(y, \theta,\dot{\theta})$$ that don't require coordinate transformations.
 
 $$
 \mathbf{y} = 
@@ -90,7 +96,7 @@ $$
 y_k = H x_k + v_k
 $$
 
- - `v_k` is measurement noise (sensor errors, inaccuracies)
+ - $$v_k$$ is measurement noise (sensor errors, inaccuracies)
 
 
 
@@ -131,7 +137,7 @@ C = \begin{bmatrix}
 \end{bmatrix}
 $$
 
-H = C is the observation matrix that tells us which states we can directly measure with our sensors.
+$$H = C$$ is the observation matrix that tells us which states we can directly measure with our sensors.
 
 * **D Matrix  (4×2):**
 
@@ -144,7 +150,10 @@ D = \begin{bmatrix}
 \end{bmatrix}
 $$
 
-D = 0, because control inputs don't directly appear in sensor readings. The sensors only measure the drone's actual state, not the commands you're sending.
+$$
+\mathbf{D} = \mathbf{O}, \text{because control inputs don't directly appear in sensor readings.} 
+\text{The sensors only measure the drone's actual state, not the commands you're sending.}
+$$
 
 ### F and H matrices
 
