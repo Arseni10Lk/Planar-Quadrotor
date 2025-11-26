@@ -33,18 +33,24 @@ Where:
 ### Linearization Process
 We linearize the system by computing Jacobian matrices - taking partial derivatives of each equation with respect to all state variables and control inputs. This creates a linear approximation of the system dynamics that can be used for state estimation.
 
+$$
+x_k = F x_{k-1} + B_k u_k + w_k
+$$
+
+- $$B_k = B_s \Delta t$$
+- $$W_k$$ ,Is process noise. This comes from imperfect physics modeling, eg, Unmodeled aerodynamics, Parameter uncertainties.
+
 ### State-Space Representation
 The IMU measures total acceleration including gravity, so we explicitly subtract $g$ when processing the $\ddot{y}$ measurement. The standard linearized system of state-space equations:
 
 $$
 \begin{aligned}
-\dot{\mathbf{x}} &= A\mathbf{x} + B\mathbf{u} + G_x \\
-\mathbf{y} &= C\mathbf{x} + D\mathbf{u} + G_y
+\dot{\mathbf{x}} &= A\mathbf{x} + B_s\mathbf{u} + G \\
+\mathbf{y} &= C\mathbf{x} + D\mathbf{u}
 \end{aligned}
 $$
 
 
-Where G and Gx contain constant terms like gravity.
 
 ### System Definitions
 
@@ -69,18 +75,32 @@ u_1 \\
 u_2
 \end{bmatrix}
 $$
+
 ### Observation Vector (4 elements)
-We assume that we have an IMU, which measures linear accelerations and angular velocity, and an altitude sensor, which measures altitude. However, accelarations are measured relative to the body cor
+Normally, an IMU provides linear accelerations and angular velocities in the body frame, which would require coordinate transformations. However, to simplify our observation model, we assume we can directly measure:
+
+- Vertical position $$y$$ from an altitude sensor
+- Pitch angle $$\theta$$ from the IMU  
+- Angular velocity $$\dot{\theta}$$ from the IMU gyroscope
+
+This allows us to use a simpler observation equation $$y_k = H x_k + v_k$$ where the measurements directly correspond to state variables.
 
 $$
 \mathbf{y} = 
 \begin{bmatrix}
 y \\
+\theta \\
 \dot{\theta} \\
-\ddot{x_b} \\
-\ddot{y_b}
 \end{bmatrix}
 $$
+
+$$
+y_k = H x_k + v_k
+$$
+
+ - $$v_k$$ is measurement noise (sensor errors, inaccuracies)
+
+
 
 ### Linearized System Matrices
 
@@ -109,28 +129,30 @@ B = \begin{bmatrix}
 \end{bmatrix}
 $$
 
-* **C Matrix - Measurement (4×6):**
+* **C Matrix - Measurement (3×6):**
 
 $$
 C = \begin{bmatrix}
 0 & 0 & 1 & 0 & 0 & 0 \\
-0 & 0 & 0 & 0 & 0 & 1 \\
-0 & 0 & 0 & 0 & \frac{-cos(θ)(u₁+u₂)}{m} & 0 \\
-0 & 0 & 0 & 0 & \frac{-sin(θ)(u₁+u₂)}{m} & 0
+0 & 0 & 0 & 0 & 1 & 0 \\
+0 & 0 & 0 & 0 & 0 & 1
 \end{bmatrix}
 $$
 
-* **D Matrix  (4×2):**
+$$H = C$$ is the observation matrix that tells us which states we can directly measure with our sensors.
+
+* **D Matrix  (3×2):**
 
 $$
 D = \begin{bmatrix}
 0 & 0 \\
 0 & 0 \\
-\frac{-sin(θ)}{m} & \frac{-sin(θ)}{m} \\
-\frac{cos(θ)}{m} & \frac{cos(θ)}{m}]
+0 & 0
 \end{bmatrix}
 $$
 
+- $$\mathbf{D} = 0_{m \times n}$$ , because control inputs don't directly appear in sensor readings.
+The sensors only measure the drone's actual state, not the commands you're sending
 ### F and H matrices
 
 $$F = I + A \Delta t$$, where I symbolizes the old state and A symbolizes the change of it.
@@ -140,7 +162,7 @@ F = \begin{bmatrix}
 1 & \Delta t & 0 & 0 & 0 & 0 \\
 0 & 1 & 0 & 0 & \frac{-cos(θ)(u₁+u₂)}{m} \Delta t & 0 \\
 0 & 0 & 1 & \Delta t & 0 & 0 \\
-0 & 1 & 0 & 0 & \frac{-sin(θ)(u₁+u₂)}{m} \Delta t & 0 \\
+0 & 0 & 0 & 1 & \frac{-sin(θ)(u₁+u₂)}{m} \Delta t & 0 \\
 0 & 0 & 0 & 0 & 1 & \Delta t \\
 0 & 0 & 0 & 0 & 0 & 1 \\
 \end{bmatrix}
@@ -148,10 +170,10 @@ $$
 
 ### Constant Terms
 
-* **Gravity vector for x $G_x$:**  
+* **Gravity vector $G$:**  
 
 $$
-G_x = \begin{bmatrix}
+G = \begin{bmatrix}
 0 \\
 0 \\
 0 \\
@@ -161,17 +183,6 @@ G_x = \begin{bmatrix}
 \end{bmatrix}
 $$
 
-
-* **Gravity vector for y $G_y$:**  
-
-$$
-G_y = \begin{bmatrix}
-0 \\
-0 \\
-0 \\
--g
-\end{bmatrix}
-$$
 ### Key Linearization Results
 
 **Partial derivatives:**  
