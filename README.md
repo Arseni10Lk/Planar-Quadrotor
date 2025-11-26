@@ -34,7 +34,7 @@ Where:
 We linearize the system by computing Jacobian matrices - taking partial derivatives of each equation with respect to all state variables and control inputs. This creates a linear approximation of the system dynamics that can be used for state estimation.
 
 $$
-x_k = F x_{k-1} + Bk u_k + w_k
+x_k = F x_{k-1} + B_k u_k + w_k
 $$
 
 - $$B_k = B_s . \Delta T$$
@@ -81,7 +81,7 @@ We have two sensors:
 - **Altitude sensor**: measures vertical position $$y$$ 
 - **IMU**: measures pitch angle $$\theta$$ and angular velocity  $$\dot{\theta}$$
 
- Although the IMU also measures linear accelerations, we are not using them directly in our observation vector. We only use the direct state measurements $$(y, \theta,\dot{\theta})$$ that don't require coordinate transformations.
+ We chose these specific measurements because they directly represent states in our model, making the observation equation simple and reliable.
 
 $$
 \mathbf{y} = 
@@ -127,7 +127,7 @@ B = \begin{bmatrix}
 \end{bmatrix}
 $$
 
-* **C Matrix - Measurement (4×6):**
+* **C Matrix - Measurement (3×6):**
 
 $$
 C = \begin{bmatrix}
@@ -151,7 +151,7 @@ D = \begin{bmatrix}
 $$
 
 $$
-\mathbf{D} = \mathbf{O}, \text{because control inputs don't directly appear in sensor readings.} 
+\mathbf{D} = 0_{m \times n}, \text{because control inputs don't directly appear in sensor readings.} 
 \text{The sensors only measure the drone's actual state, not the commands you're sending.}
 $$
 
