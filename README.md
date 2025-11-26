@@ -141,11 +141,10 @@ $$
 
 $$H = C$$ is the observation matrix that tells us which states we can directly measure with our sensors.
 
-* **D Matrix  (4×2):**
+* **D Matrix  (3×2):**
 
 $$
 D = \begin{bmatrix}
-0 & 0 \\
 0 & 0 \\
 0 & 0 \\
 0 & 0
@@ -163,7 +162,7 @@ F = \begin{bmatrix}
 1 & \Delta t & 0 & 0 & 0 & 0 \\
 0 & 1 & 0 & 0 & \frac{-cos(θ)(u₁+u₂)}{m} \Delta t & 0 \\
 0 & 0 & 1 & \Delta t & 0 & 0 \\
-0 & 1 & 0 & 0 & \frac{-sin(θ)(u₁+u₂)}{m} \Delta t & 0 \\
+0 & 0 & 0 & 1 & \frac{-sin(θ)(u₁+u₂)}{m} \Delta t & 0 \\
 0 & 0 & 0 & 0 & 1 & \Delta t \\
 0 & 0 & 0 & 0 & 0 & 1 \\
 \end{bmatrix}
@@ -171,10 +170,10 @@ $$
 
 ### Constant Terms
 
-* **Gravity vector for x $G_x$:**  
+* **Gravity vector $G$:**  
 
 $$
-G_x = \begin{bmatrix}
+G = \begin{bmatrix}
 0 \\
 0 \\
 0 \\
@@ -184,17 +183,6 @@ G_x = \begin{bmatrix}
 \end{bmatrix}
 $$
 
-
-* **Gravity vector for y $G_y$:**  
-
-$$
-G_y = \begin{bmatrix}
-0 \\
-0 \\
-0 \\
--g
-\end{bmatrix}
-$$
 ### Key Linearization Results
 
 **Partial derivatives:**  
