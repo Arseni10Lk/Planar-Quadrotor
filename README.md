@@ -33,6 +33,10 @@ Where:
 ### Linearization Process
 We linearize the system by computing Jacobian matrices - taking partial derivatives of each equation with respect to all state variables and control inputs. This creates a linear approximation of the system dynamics that can be used for state estimation.
 
+$$
+x_k = F x_{k-1} + B u_k + w_k
+$$
+
 ### State-Space Representation
 The IMU measures total acceleration including gravity, so we explicitly subtract $g$ when processing the $\ddot{y}$ measurement. The standard linearized system of state-space equations:
 
@@ -44,7 +48,7 @@ $$
 $$
 
 
-Where G and Gx contain constant terms like gravity.
+Where G_y and G_x contain constant terms like gravity.
 
 ### System Definitions
 
@@ -69,18 +73,26 @@ u_1 \\
 u_2
 \end{bmatrix}
 $$
+
 ### Observation Vector (4 elements)
-We assume that we have an IMU, which measures linear accelerations and angular velocity, and an altitude sensor, which measures altitude. However, accelarations are measured relative to the body cor
+We assume that we have an IMU, which measures linear accelerations and angular velocity, and an altitude sensor, which measures altitude. However, accelerations are measured relative to the body
 
 $$
 \mathbf{y} = 
 \begin{bmatrix}
 y \\
+\theta \\
 \dot{\theta} \\
-\ddot{x_b} \\
-\ddot{y_b}
 \end{bmatrix}
 $$
+
+$$
+y_k = H x_k + v_k
+$$
+
+ - `v_k` is measurement noise (sensor errors, inaccuracies)
+
+
 
 ### Linearized System Matrices
 
@@ -114,11 +126,12 @@ $$
 $$
 C = \begin{bmatrix}
 0 & 0 & 1 & 0 & 0 & 0 \\
-0 & 0 & 0 & 0 & 0 & 1 \\
-0 & 0 & 0 & 0 & \frac{-cos(θ)(u₁+u₂)}{m} & 0 \\
-0 & 0 & 0 & 0 & \frac{-sin(θ)(u₁+u₂)}{m} & 0
+0 & 0 & 0 & 0 & 1 & 0 \\
+0 & 0 & 0 & 0 & 0 & 1
 \end{bmatrix}
 $$
+
+H = C is the observation matrix that tells us which states we can directly measure with our sensors.
 
 * **D Matrix  (4×2):**
 
@@ -126,10 +139,12 @@ $$
 D = \begin{bmatrix}
 0 & 0 \\
 0 & 0 \\
-\frac{-sin(θ)}{m} & \frac{-sin(θ)}{m} \\
-\frac{cos(θ)}{m} & \frac{cos(θ)}{m}]
+0 & 0 \\
+0 & 0
 \end{bmatrix}
 $$
+
+D = 0, because control inputs don't directly appear in sensor readings. The sensors only measure the drone's actual state, not the commands you're sending.
 
 ### F and H matrices
 
