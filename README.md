@@ -37,7 +37,7 @@ $$
 x_k = F x_{k-1} + B_k u_k + w_k
 $$
 
-- $$B_k = B_s . \Delta T$$
+- $$B_k = B_s \Delta t$$
 - $$W_k$$ ,Is process noise. This comes from imperfect physics modeling, eg, Unmodeled aerodynamics, Parameter uncertainties.
 
 ### State-Space Representation
@@ -45,12 +45,12 @@ The IMU measures total acceleration including gravity, so we explicitly subtract
 
 $$
 \begin{aligned}
-\dot{\mathbf{x}} &= A\mathbf{x} + B_s\mathbf{u} + G_x \\
-\mathbf{y} &= C\mathbf{x} + D\mathbf{u} + G_y
+\dot{\mathbf{x}} &= A\mathbf{x} + B_s\mathbf{u} + G \\
+\mathbf{y} &= C\mathbf{x} + D\mathbf{u}
 \end{aligned}
 $$
 
-Where $$Gy$$ and $$Gx$$ contain constant terms like gravity.
+
 
 ### System Definitions
 
@@ -77,11 +77,13 @@ u_2
 $$
 
 ### Observation Vector (4 elements)
-We have two sensors:
-- **Altitude sensor**: measures vertical position $$y$$ 
-- **IMU**: measures pitch angle $$\theta$$ and angular velocity  $$\dot{\theta}$$
+Normally, an IMU provides linear accelerations and angular velocities in the body frame, which would require coordinate transformations. However, to simplify our observation model, we assume we can directly measure:
 
- We chose these specific measurements because they directly represent states in our model, making the observation equation simple and reliable.
+- Vertical position $$y$$ from an altitude sensor
+- Pitch angle $$\theta$$ from the IMU  
+- Angular velocity $$\dot{\theta}$$ from the IMU gyroscope
+
+This allows us to use a simpler observation equation $$y_k = H x_k + v_k$$ where the measurements directly correspond to state variables.
 
 $$
 \mathbf{y} = 
@@ -150,11 +152,8 @@ D = \begin{bmatrix}
 \end{bmatrix}
 $$
 
-$$
-\mathbf{D} = 0_{m \times n}, \text{because control inputs don't directly appear in sensor readings.} 
-\text{The sensors only measure the drone's actual state, not the commands you're sending.}
-$$
-
+- $$\mathbf{D} = 0_{m \times n}$$ , because control inputs don't directly appear in sensor readings.
+The sensors only measure the drone's actual state, not the commands you're sending
 ### F and H matrices
 
 $$F = I + A \Delta t$$, where I symbolizes the old state and A symbolizes the change of it.
