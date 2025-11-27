@@ -76,7 +76,7 @@ u_2
 \end{bmatrix}
 $$
 
-### Observation Vector (4 elements)
+### Observation Vector (3 elements)
 Normally, an IMU provides linear accelerations and angular velocities in the body frame, which would require coordinate transformations. However, to simplify our observation model, we assume we can directly measure:
 
 - Vertical position $$y$$ from an altitude sensor
