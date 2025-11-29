@@ -1,3 +1,6 @@
+clc;
+clear; 
+close all;
 
 %%DEFINE VARIABLES
 m = 0.5;         % mass [kg] 
@@ -8,6 +11,8 @@ dt = 0.01;       % time step [s]
 theta = 0;       % angle [rads]
 u1 = 2.45;       % force [N]
 u2 = 2.45;       % force [N]
+
+t_max = 10;      % simulation duration [s]
 
 % A matrix - System dynamics
 A = [0  1  0  0   0   0;
@@ -23,31 +28,31 @@ B = [0       0;
      0       0;
      1/m     1/m;
      0       0;
-     r/I     -r/I];  % Missing -r/I in original
+     r/I     -r/I]; 
 
 % C matrix - Measurements
 C = [0  0  1  0  0  0;
      0  0  0  0  1  0;
      0  0  0  0  0  1];
 
-D = zeros(3,2);  % Noticed this was forgotten from before
+D = zeros(3,2);  
 
-%% STEP 3: CREATE STATE-SPACE OBJECT (Like video's sys = ss(A,B,C,D))
+%% STEP 3: CREATE STATE-SPACE OBJECT
 quadrotor_sys = ss(A, B, C, D);
 
 
-%% STEP 4: DEFINE TIME VECTOR (Like video's time = 0:0.01:15)
-time = 0:dt:10;  
+%% STEP 4: DEFINE TIME VECTOR
+time = 0:dt:t_max;  
 
-%% STEP 5: DEFINE CONTROL INPUTS (Like video's control_U = 30*sin(2*time) - 10*cos(4*time))
+%% STEP 5: DEFINE CONTROL INPUTS
 % Create CU1 and CU2 (time-varying control inputs)
 CU1 = 2.5 + 0.5*sin(2*time);  
 CU2 = 2.5 + 0.3*cos(1.5*time); 
 
-% Combine for lsim (like video's control_U but for 2 inputs)
+% Combine for lsim
 control_input = [CU1; CU2]';  
 
-%% FIGURE 1: PLOT CONTROL INPUTS (Like video's plot(time, control_U))
+%% FIGURE 1: PLOT CONTROL INPUTS
 figure(1);
 plot(time, CU1, 'b-', 'LineWidth', 2); hold on;
 plot(time, CU2, 'r--', 'LineWidth', 2);
@@ -57,63 +62,65 @@ title('Control Inputs: CU1 and CU2');
 legend('CU1', 'CU2', 'Location', 'best');
 grid on;
 
-%% FIGURE 2: SYSTEM RESPONSE TO INPUTS (Like video's lsim(sys, control_U, time))
+%% FIGURE 2: SYSTEM RESPONSE TO INPUTS
 figure(2);
-[output1, time_data1, states1] = lsim(quadrotor_sys, control_input, time);
+[output1, ~, states1] = lsim(quadrotor_sys, control_input, time);
 % system starts from zero
 
 % Plot the outputs (measured states)
-plot(time_data1, output1(:,1), 'b-', 'LineWidth', 2); hold on;
-plot(time_data1, output1(:,2), 'r-', 'LineWidth', 2);
-plot(time_data1, output1(:,3), 'g-', 'LineWidth', 2);
+plot(time, output1(:,1), 'b-', 'LineWidth', 2); hold on;
+plot(time, output1(:,2), 'r-', 'LineWidth', 2);
+plot(time, output1(:,3), 'g-', 'LineWidth', 2);
 xlabel('Time (s)');
 ylabel('Output');
 title('System Response to Control Inputs (Zero Initial Conditions)');
 legend('y-position', 'theta', 'theta-dot', 'Location', 'best');
 grid on;
 
-%% FIGURE 3: PLOT OUTPUT DATA (Like video's plot(Ti, Ys))
+%% FIGURE 3: PLOT OUTPUT DATA
+
+% Add noise here. For now, it is identical to Figure 2
+
 figure(3);
 % This is the same as Figure 2 but showing the data extraction
-[Ys, Ti] = lsim(quadrotor_sys, control_input, time);
+[Ys, ~] = lsim(quadrotor_sys, control_input, time);
 
-plot(Ti, Ys(:,1), 'b-', 'LineWidth', 2); hold on;
-plot(Ti, Ys(:,2), 'r-', 'LineWidth', 2);
-plot(Ti, Ys(:,3), 'g-', 'LineWidth', 2);
+plot(time, Ys(:,1), 'b-', 'LineWidth', 2); hold on;
+plot(time, Ys(:,2), 'r-', 'LineWidth', 2);
+plot(time, Ys(:,3), 'g-', 'LineWidth', 2);
 xlabel('Time (s)');
 ylabel('Output');
 title('Output Data: Ys vs Ti (Zero Initial Conditions)');
 legend('y-measured', 'theta-measured', 'theta-dot-measured', 'Location', 'best');
 grid on;
 
-%% FIGURE 4: SYSTEM RESPONSE WITH INITIAL CONDITIONS (Like video's lsim(sys, control_U, time, x0))
+%% FIGURE 4: SYSTEM RESPONSE WITH INITIAL CONDITIONS
 figure(4);
 
 x0 = [0; 0; 1; 0; 0; 0];  % Start at x=0, y=1m, level hovering
 
-[Ys2, Ti2, states2] = lsim(quadrotor_sys, control_input, time, x0);
+[Ys2, ~, states2] = lsim(quadrotor_sys, control_input, time, x0);
 
 % Plot all states to see complete evolution
 subplot(2,1,1);
-plot(Ti2, states2(:,1), 'b-', 'LineWidth', 2); hold on;
-plot(Ti2, states2(:,3), 'r-', 'LineWidth', 2);
+plot(time, states2(:,1), 'b-', 'LineWidth', 2); hold on;
+plot(time, states2(:,3), 'r-', 'LineWidth', 2);
 xlabel('Time (s)'); ylabel('Position (m)');
 title('Quadrotor Position (With Initial Conditions)');
 legend('x-position', 'y-position', 'Location', 'best'); grid on;
 
 subplot(2,1,2);
-plot(Ti2, states2(:,5), 'g-', 'LineWidth', 2);
+plot(time, states2(:,5), 'g-', 'LineWidth', 2);
 xlabel('Time (s)'); ylabel('Angle (rad)');
 title('Pitch Angle Evolution'); grid on;
-
 
 disp('=== Overal MATRICES ===');
 disp('States matrix with initial conditions (first 5 rows):');
 state_names = {'x_pos', 'x_vel', 'y_pos', 'y_vel', 'theta', 'theta_dot'};
-results_table = array2table([Ti2, states2], 'VariableNames', ['Time', state_names]);
+results_table = array2table([time', states2], 'VariableNames', ['Time', state_names]);
 disp(results_table(1:5,:));
 
 disp('Output matrix with initial conditions (first 5 rows):');
 output_names = {'y_measured', 'theta_measured', 'theta_dot_measured'};
-output_table = array2table([Ti2, Ys2], 'VariableNames', ['Time', output_names]);
+output_table = array2table([time', Ys2], 'VariableNames', ['Time', output_names]);
 disp(output_table(1:5,:));
