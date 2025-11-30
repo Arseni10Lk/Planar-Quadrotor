@@ -197,3 +197,34 @@ $$
 
 - $\frac{\partial \ddot{\theta}}{\partial u_1} = \frac{r}{I}$, $\frac{\partial \ddot{\theta}}{\partial u_2} = -\frac{r}{I}$
 
+## Extended Kalman Filter
+### Formulas and Definitions
+**Step 0: Initialization**
+
+Kalman filter needs some initial data to begin working. We need:
+- Initial conditions vector: $\ x̂_0$
+- Initial variance matrix: $\ P_0 = I $
+- Process noise variance matrix: $\ Q = 10^{-3}I $
+- Measurement noise variance matrix: R = I (for now)
+
+**Step 1: Prediction**
+
+Here we predict the state of the system and calculate the estimated variance matrix:
+
+- $\ x̂_i^- = Fx̂_{i-1} $
+- $\ P_{i}^- = FP_{i-1}F^T + Q $ 
+
+**Step 2: Correction**
+
+We have to calculate gain coefficient, which defines our trust of the new measurement; our state estimate at the new step; and an update ot the variance matrix:
+
+- $\ k_i = P_i^-(P_{i-1} + R)^{-1} $
+- $\ x̂_i = (I-k_i)x̂^-_i + k_iz_i $
+- $\ P_i = (I - k_i)P^-_{i} $
+
+**Step 3: Iteration**
+
+This step is just a technicality for updating current state and variance matrix of the system:
+
+- $\ x̂_{i-1}^- = x̂_{i} $
+- $\ P_{i-1} = P_i $
