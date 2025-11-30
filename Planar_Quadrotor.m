@@ -12,6 +12,16 @@ theta = 0;       % angle [rads]
 u1 = 2.45;       % force [N]
 u2 = 2.45;       % force [N]
 
+% Structure definition
+rotor_data.m = m;
+rotor_data.r = r;
+rotor_data.I = I;
+rotor_data.g = g;
+rotor_data.dt = dt;
+rotor_data.theta = theta;
+rotor_data.u1 = u1;
+rotor_data.u2 = u2;
+
 t_max = 10;      % simulation duration [s]
 
 % A matrix - System dynamics
@@ -46,8 +56,8 @@ time = 0:dt:t_max;
 
 %% STEP 5: DEFINE CONTROL INPUTS
 % Create CU1 and CU2 (time-varying control inputs)
-CU1 = 2.5 + 0.5*sin(2*time);  
-CU2 = 2.5 + 0.3*cos(1.5*time); 
+CU1 = 2.5 + 0.001*cos(2*time);  
+CU2 = 2.5 + 0.001*sin(2*time); 
 
 % Combine for lsim
 control_input = [CU1; CU2]';  
@@ -64,12 +74,12 @@ grid on;
 
 %% FIGURE 2: SYSTEM RESPONSE TO INPUTS
 figure(2);
-[output1, ~, states1] = lsim(quadrotor_sys, control_input, time);
+[output1, ~] = quadrotor_clean_physics_sim(A, C, control_input, time, rotor_data, []);
 % system starts from zero
 
 % Plot the outputs (measured states)
 plot(time, output1(:,1), 'b-', 'LineWidth', 2); hold on;
-plot(time, output1(:,2), 'r-', 'LineWidth', 2);
+plot(time, rad2deg(output1(:,2)), 'r-', 'LineWidth', 2);
 plot(time, output1(:,3), 'g-', 'LineWidth', 2);
 xlabel('Time (s)');
 ylabel('Output');
@@ -83,10 +93,10 @@ grid on;
 
 figure(3);
 % This is the same as Figure 2 but showing the data extraction
-[Ys, ~] = lsim(quadrotor_sys, control_input, time);
+[Ys, states1] = quadrotor_clean_physics_sim(A, C, control_input, time, rotor_data, []);
 
 plot(time, Ys(:,1), 'b-', 'LineWidth', 2); hold on;
-plot(time, Ys(:,2), 'r-', 'LineWidth', 2);
+plot(time, rad2deg(Ys(:,2)), 'r-', 'LineWidth', 2);
 plot(time, Ys(:,3), 'g-', 'LineWidth', 2);
 xlabel('Time (s)');
 ylabel('Output');
@@ -99,7 +109,9 @@ figure(4);
 
 x0 = [0; 0; 1; 0; 0; 0];  % Start at x=0, y=1m, level hovering
 
-[Ys2, ~, states2] = lsim(quadrotor_sys, control_input, time, x0);
+%[Ys2, ~, states2] = lsim(quadrotor_sys, control_input, time, x0); - for
+%linear systems
+[Ys2, states2] = quadrotor_clean_physics_sim(A, C, control_input, time, rotor_data, x0);
 
 % Plot all states to see complete evolution
 subplot(2,1,1);
