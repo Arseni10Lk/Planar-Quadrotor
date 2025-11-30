@@ -124,3 +124,27 @@ disp('Output matrix with initial conditions (first 5 rows):');
 output_names = {'y_measured', 'theta_measured', 'theta_dot_measured'};
 output_table = array2table([time', Ys2], 'VariableNames', ['Time', output_names]);
 disp(output_table(1:5,:));
+
+%% STEP 6: KALMAN FILTER (at least it is expected)
+F = A*dt+eye(6);
+prediction = zeros(6,t_max/dt+1);
+prediction(:,1) = x0;
+R = eye(6);
+Q = eye(6)*10^-3;
+P0 = eye(6);
+i=2;
+while i<=1001
+    %x_est = eye(6)*prediction(:,i-1)+A*dt*prediction(:,i-1);
+    x_est = F*prediction(:,i-1);
+    %P_est = A*P0*transpose(A)+Q;
+    P_est = F*P0*transpose(F)+Q;
+    k = P_est*inv(P0+R);
+    prediction(:,i) = (eye(6)-k)*x_est+k*transpose(states1(i,:));
+    P0 = (eye(6)-k)*P_est;
+    i = i + 1;
+end
+%% FIGURE 5: Temporary display of Kalman filter results
+figure(5)
+
+plot(time,prediction(1,:)); hold on;
+plot(time,prediction(3,:));
