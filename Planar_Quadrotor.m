@@ -138,25 +138,37 @@ output_table = array2table([time', Ys2], 'VariableNames', ['Time', output_names]
 disp(output_table(1:5,:));
 
 %% STEP 6: KALMAN FILTER (at least it is expected)
-F = A*dt+eye(6);
-prediction = zeros(6,t_max/dt+1);
-prediction(:,1) = x0;
-R = eye(6);
-Q = eye(6)*10^-3;
-P0 = eye(6);
-i=2;
-while i<=1001
-    %x_est = eye(6)*prediction(:,i-1)+A*dt*prediction(:,i-1);
-    x_est = F*prediction(:,i-1);
-    %P_est = A*P0*transpose(A)+Q;
-    P_est = F*P0*transpose(F)+Q;
-    k = P_est*inv(P0+R);
-    prediction(:,i) = (eye(6)-k)*x_est+k*transpose(states1(i,:));
-    P0 = (eye(6)-k)*P_est;
-    i = i + 1;
+
+Kalman_prediction = zeros(6,length(time)); % System state by Kalman filter
+Kalman_prediction(:,1) = x0;
+R = eye(3)*10^-3; % Measurement noise variance
+Q = eye(6)*10^-3; % Process noise variance
+P0 = eye(6); % Initial variance
+
+for i = 2:length(time)
+
+   
+    % Prediction stage
+
+    x_est = Kalman_prediction(:,i-1); % x_{i-1}
+    F = eye(6)+dt*[0  1  0  0   0   0;
+                   0  0  0  0   -cos(Kalman_prediction(5,i-1))*(control_input(i-1,1)+control_input(i-1,2))/m   0;
+                   0  0  0  1   0   0;
+                   0  0  0  0   -sin(Kalman_prediction(5,i-1))*(control_input(i-1,1)+control_input(i-1,2))/m   0;
+                   0  0  0  0   0   1;
+                   0  0  0  0   0   0]; % F matrix depends on the state, so this is the way
+    P_est = F * P0 * transpose(F) + Q; % P_i^-
+   
+    % Correction stage
+    
+    k = P_est * transpose(C) / (C * P0 * transpose(C)+R); % Kalman gain (6 by 3 matrix)
+    Kalman_prediction(:,i) = (eye(6)-k * C) * x_est + k * transpose(Ys2(i,:));
+    P0 = (eye(6) - k * C) * P_est; % Technically iteration stage, but it is united with the last correction step
 end
 %% FIGURE 5: Temporary display of Kalman filter results
 figure(5)
 
-plot(time,prediction(1,:)); hold on;
-plot(time,prediction(3,:));
+plot(time,Kalman_prediction(1,:)); hold on;
+plot(time,Kalman_prediction(3,:));
+plot(time,Kalman_prediction(5,:));
+legend("x-position","y-position","theta angle");
