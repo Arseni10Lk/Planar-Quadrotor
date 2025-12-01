@@ -205,7 +205,7 @@ Kalman filter needs some initial data to begin working. We need:
 - Initial conditions vector: $\ x̂_0$
 - Initial variance matrix: $\ P_0 = I $
 - Process noise variance matrix: $\ Q = 10^{-3}I $
-- Measurement noise variance matrix: R = I (for now)
+- Measurement noise variance matrix: $\ R = 10^{-3}I $
 
 **Step 1: Prediction**
 
