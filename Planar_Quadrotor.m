@@ -56,11 +56,16 @@ time = 0:dt:t_max;
 
 %% STEP 5: DEFINE CONTROL INPUTS
 % Create CU1 and CU2 (time-varying control inputs)
-CU1 = 2.5 + 0.001*cos(2*time);  
-CU2 = 2.5 + 0.001*sin(2*time); 
+CU1 = 3 + 0.001*cos(2*time);  
+CU2 = 3 + 0.001*sin(2*time); 
 
 % Combine for lsim
 control_input = [CU1; CU2]';  
+
+%% STEP 6: DEFINE NOISE AMPLITUDE
+
+state_noise_amp = 0.004; % Process noise amplitude
+measurement_noise_amp = 0.05; % Measurement noise amplitude
 
 %% FIGURE 1: PLOT CONTROL INPUTS
 figure(1);
@@ -93,7 +98,7 @@ grid on;
 
 figure(3);
 % This is the same as Figure 2 but showing the data extraction
-[Ys, states1] = quadrotor_clean_physics_sim(A, C, control_input, time, rotor_data, []);
+[Ys, states1] = quadrotor_NOISY_physics_sim(A, C, control_input, time, rotor_data, [], state_noise_amp, measurement_noise_amp);
 
 plot(time, Ys(:,1), 'b-', 'LineWidth', 2); hold on;
 plot(time, rad2deg(Ys(:,2)), 'r-', 'LineWidth', 2);
@@ -137,7 +142,7 @@ output_names = {'y_measured', 'theta_measured', 'theta_dot_measured'};
 output_table = array2table([time', Ys2], 'VariableNames', ['Time', output_names]);
 disp(output_table(1:5,:));
 
-%% STEP 6: KALMAN FILTER (at least it is expected)
+%% STEP 7: KALMAN FILTER
 
 Kalman_prediction = zeros(6,length(time)); % System state by Kalman filter
 Kalman_prediction(:,1) = x0;
@@ -155,7 +160,7 @@ for i = 2:length(time)
                    0  0  0  0   -sin(Kalman_prediction(5,i-1))*(control_input(i-1,1)+control_input(i-1,2))/m   0;
                    0  0  0  0   0   1;
                    0  0  0  0   0   0]; % F matrix depends on the state, so this is the way
-    x_est = F*Kalman_prediction(:,i-1);
+    x_est = F*Kalman_prediction(:,i-1); %NOISE
     P_est = F * P0 * transpose(F) + Q; % P_i^-
    
     % Correction stage
