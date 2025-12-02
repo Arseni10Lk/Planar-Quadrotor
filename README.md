@@ -139,8 +139,6 @@ C = \begin{bmatrix}
 \end{bmatrix}
 $$
 
-$$H = C$$ is the observation matrix that tells us which states we can directly measure with our sensors.
-
 * **D Matrix  (3×2):**
 
 $$
@@ -151,7 +149,7 @@ D = \begin{bmatrix}
 \end{bmatrix}
 $$
 
-- $$\mathbf{D} = 0_{m \times n}$$ , because control inputs don't directly appear in sensor readings.
+- $$\mathbf{D} = 0_{m \times n}$$, because control inputs don't directly appear in sensor readings.
 The sensors only measure the drone's actual state, not the commands you're sending
 ### F and H matrices
 
@@ -168,7 +166,7 @@ F = \begin{bmatrix}
 \end{bmatrix}
 $$
 
-H matrix is the same as the C matrix:
+The H matrix is the same as the C matrix, since they tell us what we can measure with our sensors:
 
 $$
 H = \begin{bmatrix}
