@@ -168,6 +168,16 @@ F = \begin{bmatrix}
 \end{bmatrix}
 $$
 
+H matrix is the same as the C matrix:
+
+$$
+H = \begin{bmatrix}
+0 & 0 & 1 & 0 & 0 & 0 \\
+0 & 0 & 0 & 0 & 1 & 0 \\
+0 & 0 & 0 & 0 & 0 & 1
+\end{bmatrix}
+$$
+
 ### Constant Terms
 
 * **Gravity vector $G$:**  
@@ -203,9 +213,9 @@ $$
 
 Kalman filter needs some initial data to begin working. We need:
 - Initial conditions vector: $\ x̂_0$
-- Initial variance matrix: $\ P_0 = I $
-- Process noise variance matrix: $\ Q = 10^{-3}I $
-- Measurement noise variance matrix: $\ R = 10^{-3}I $
+- Initial variance matrix: $\ P_0 = I_{6x6} $
+- Process noise variance matrix: $\ Q = 10^{-3}\\cdot \ I_{6x6} $
+- Measurement noise variance matrix: $\ R = 10^{-3}\\cdot \ I_{6x6} $
 
 **Step 1: Prediction**
 
