@@ -139,8 +139,6 @@ C = \begin{bmatrix}
 \end{bmatrix}
 $$
 
-$$H = C$$ is the observation matrix that tells us which states we can directly measure with our sensors.
-
 * **D Matrix  (3×2):**
 
 $$
@@ -151,7 +149,7 @@ D = \begin{bmatrix}
 \end{bmatrix}
 $$
 
-- $$\mathbf{D} = 0_{m \times n}$$ , because control inputs don't directly appear in sensor readings.
+- $$\mathbf{D} = 0_{m \times n}$$, because control inputs don't directly appear in sensor readings.
 The sensors only measure the drone's actual state, not the commands you're sending
 ### F and H matrices
 
@@ -165,6 +163,16 @@ F = \begin{bmatrix}
 0 & 0 & 0 & 1 & \frac{-sin(θ)(u₁+u₂)}{m} \Delta t & 0 \\
 0 & 0 & 0 & 0 & 1 & \Delta t \\
 0 & 0 & 0 & 0 & 0 & 1 \\
+\end{bmatrix}
+$$
+
+The H matrix is the same as the C matrix, since they tell us what we can measure with our sensors:
+
+$$
+H = \begin{bmatrix}
+0 & 0 & 1 & 0 & 0 & 0 \\
+0 & 0 & 0 & 0 & 1 & 0 \\
+0 & 0 & 0 & 0 & 0 & 1
 \end{bmatrix}
 $$
 
@@ -203,9 +211,9 @@ $$
 
 Kalman filter needs some initial data to begin working. We need:
 - Initial conditions vector: $\ x̂_0$
-- Initial variance matrix: $\ P_0 = I $
-- Process noise variance matrix: $\ Q = 10^{-3}I $
-- Measurement noise variance matrix: $\ R = 10^{-3}I $
+- Initial variance matrix: $\ P_0 = I_{6x6} $
+- Process noise variance matrix: $\ Q = 10^{-3}\\cdot \ I_{6x6} $
+- Measurement noise variance matrix: $\ R = 10^{-3}\\cdot \ I_{6x6} $
 
 **Step 1: Prediction**
 
