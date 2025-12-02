@@ -80,7 +80,7 @@ figure(2);
 % Plot the outputs (measured states)
 plot(time, output1(:,1), 'b-', 'LineWidth', 2); hold on;
 plot(time, rad2deg(output1(:,2)), 'r-', 'LineWidth', 2);
-plot(time, output1(:,3), 'g-', 'LineWidth', 2);
+plot(time, rad2deg(output1(:,3)), 'g-', 'LineWidth', 2);
 xlabel('Time (s)');
 ylabel('Output');
 title('System Response to Control Inputs (Zero Initial Conditions)');
@@ -97,7 +97,7 @@ figure(3);
 
 plot(time, Ys(:,1), 'b-', 'LineWidth', 2); hold on;
 plot(time, rad2deg(Ys(:,2)), 'r-', 'LineWidth', 2);
-plot(time, Ys(:,3), 'g-', 'LineWidth', 2);
+plot(time, rad2deg(Ys(:,3)), 'g-', 'LineWidth', 2);
 xlabel('Time (s)');
 ylabel('Output');
 title('Output Data: Ys vs Ti (Zero Initial Conditions)');
@@ -122,8 +122,8 @@ title('Quadrotor Position (With Initial Conditions)');
 legend('x-position', 'y-position', 'Location', 'best'); grid on;
 
 subplot(2,1,2);
-plot(time, states2(:,5), 'g-', 'LineWidth', 2);
-xlabel('Time (s)'); ylabel('Angle (rad)');
+plot(time, rad2deg(states2(:,5)), 'g-', 'LineWidth', 2);
+xlabel('Time (s)'); ylabel('Angle (deg)');
 title('Pitch Angle Evolution'); grid on;
 
 disp('=== Overal MATRICES ===');
@@ -149,14 +149,13 @@ for i = 2:length(time)
 
    
     % Prediction stage
-
-    x_est = Kalman_prediction(:,i-1); % x_{i-1}
     F = eye(6)+dt*[0  1  0  0   0   0;
                    0  0  0  0   -cos(Kalman_prediction(5,i-1))*(control_input(i-1,1)+control_input(i-1,2))/m   0;
                    0  0  0  1   0   0;
                    0  0  0  0   -sin(Kalman_prediction(5,i-1))*(control_input(i-1,1)+control_input(i-1,2))/m   0;
                    0  0  0  0   0   1;
                    0  0  0  0   0   0]; % F matrix depends on the state, so this is the way
+    x_est = F*Kalman_prediction(:,i-1);
     P_est = F * P0 * transpose(F) + Q; % P_i^-
    
     % Correction stage
@@ -168,7 +167,25 @@ end
 %% FIGURE 5: Temporary display of Kalman filter results
 figure(5)
 
-plot(time,Kalman_prediction(1,:)); hold on;
-plot(time,Kalman_prediction(3,:));
-plot(time,Kalman_prediction(5,:));
-legend("x-position","y-position","theta angle");
+subplot(2,1,1);
+plot(time,Kalman_prediction(1,:), 'b-', 'LineWidth', 2); hold on;
+plot(time, Kalman_prediction(3,:), 'r-', 'LineWidth', 2);
+xlabel('Time (s)'); ylabel('Position (m)');
+title('Quadrotor Position (With Initial Conditions) From Extended Kalman Filter');
+legend('x-position', 'y-position', 'Location', 'best'); grid on;
+
+subplot(2,1,2);
+plot(time, rad2deg(Kalman_prediction(5,:)), 'g-', 'LineWidth', 2);
+xlabel('Time (s)'); ylabel('Angle (deg)');
+title('Pitch Angle Evolution'); grid on;
+
+disp('=== Overal MATRICES ===');
+disp('States matrix with initial conditions (first 5 rows):');
+state_names = {'x_pos', 'x_vel', 'y_pos', 'y_vel', 'theta', 'theta_dot'};
+results_table = array2table([time', states2], 'VariableNames', ['Time', state_names]);
+disp(results_table(1:5,:));
+
+disp('Output matrix with initial conditions (first 5 rows):');
+output_names = {'y_measured', 'theta_measured', 'theta_dot_measured'};
+output_table = array2table([time', Ys2], 'VariableNames', ['Time', output_names]);
+disp(output_table(1:5,:));
