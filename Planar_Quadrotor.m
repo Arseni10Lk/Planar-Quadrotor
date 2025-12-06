@@ -152,14 +152,14 @@ disp(output_table(1:5,:));
 figure(5)
 
 subplot(2,1,1);
-plot(time, states1(:,1), 'b-', 'LineWidth', 2); hold on;
-plot(time, states1(:,3), 'r-', 'LineWidth', 2);
+plot(time, state(:,1), 'b-', 'LineWidth', 2); hold on;
+plot(time, state(:,3), 'r-', 'LineWidth', 2);
 xlabel('Time (s)'); ylabel('Position (m)');
 title('Quadrotor Position (noisy) (With Initial Conditions)');
 legend('x-position', 'y-position', 'Location', 'best'); grid on;
 
 subplot(2,1,2);
-plot(time, rad2deg(states1(:,5)), 'g-', 'LineWidth', 2);
+plot(time, rad2deg(state(:,5)), 'g-', 'LineWidth', 2);
 xlabel('Time (s)'); ylabel('Angle (deg)');
 title('Pitch Angle Evolution (noisy)'); grid on;
 %% FIGURE 6: Temporary display of Kalman filter results
