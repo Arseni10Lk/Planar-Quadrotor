@@ -1,4 +1,4 @@
-function [output, states] = quadrotor_NOISY_physics_sim(A, C, u, time, rotor_data, x0, state_noise_amp, measurement_noise_amp)
+function [output, states, kalman] = quadrotor_NOISY_physics_sim(A, C, u, time, rotor_data, x0, state_noise_amp, measurement_noise_amp)
 
 % getting all the quadrotor characteristics
 m = rotor_data.m; 
@@ -11,14 +11,21 @@ if isempty(x0)
     x0 = zeros(1, 6);
 end
 
-% Initialize output and states based on input parameters
+% Initialize output and states based on input parameters, kalman state vect
 output = zeros(length(time), size(C, 1));
 states = zeros(length(time), size(A, 1));
+kalman = zeros(length(time), size(A, 1));
+
+
+rng(2);
+% Kalman filter definitions
+P0 = eye(6); % Initial variance
 
 % Simulate the system dynamics over the specified time
 
 states(1, :) = x0; % Set initial state
 output(1, :) = C*states(1, :)';
+kalman(1, :) = x0;  
 
 for t = 2:length(time)
     
@@ -37,10 +44,13 @@ for t = 2:length(time)
     delta_x(4) = (cos(theta)*(u(t, 1)+u(t, 2))/m - g) * dt;
 
     state_noise = state_noise_amp * randn(1, size(A, 1));
-    states(t, :) = states(t-1, :) + delta_x(:)'+state_noise;
+    states(t, :) = states(t-1, :) + delta_x(:)' + state_noise;
 
-    output_noise = measurement_noise_amp * randn(size(C, 1), 1);
+    output_noise = measurement_noise_amp * randn(size(C, 1),1);
     output(t, :) = C * states(t, :)' + output_noise; % Compute output from states with added noise
-    
+
+    % Kalman update step
+
+    [P0,kalman(t,:)] = kalman_filter(C, u(t,:), rotor_data, kalman(t-1,:), output(t,:), P0);
 end
 end
