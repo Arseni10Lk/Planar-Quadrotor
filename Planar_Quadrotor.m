@@ -98,7 +98,7 @@ grid on;
 
 figure(3);
 % This is the same as Figure 2 but showing the data extraction
-[Ys, states1] = quadrotor_NOISY_physics_sim(A, C, control_input, time, rotor_data, [], state_noise_amp, measurement_noise_amp);
+[Ys, states1,~] = quadrotor_NOISY_physics_sim(A, C, control_input, time, rotor_data, [], state_noise_amp, measurement_noise_amp);
 
 plot(time, Ys(:,1), 'b-', 'LineWidth', 2); hold on;
 plot(time, rad2deg(Ys(:,2)), 'r-', 'LineWidth', 2);
@@ -112,24 +112,27 @@ grid on;
 %% FIGURE 4: SYSTEM RESPONSE WITH INITIAL CONDITIONS
 figure(4);
 
-x0 = [0; 0; 1; 0; 0; 0];  % Start at x=0, y=1m, level hovering
+x0 = [0;0;1;0;0;0];
 
 %[Ys2, ~, states2] = lsim(quadrotor_sys, control_input, time, x0); - for
 %linear systems
+
 [Ys2, states2] = quadrotor_clean_physics_sim(A, C, control_input, time, rotor_data, x0);
+
+[output, state,Kalman_prediction] = quadrotor_NOISY_physics_sim(A, C, control_input, time, rotor_data, x0, state_noise_amp, measurement_noise_amp);
 
 % Plot all states to see complete evolution
 subplot(2,1,1);
 plot(time, states2(:,1), 'b-', 'LineWidth', 2); hold on;
 plot(time, states2(:,3), 'r-', 'LineWidth', 2);
 xlabel('Time (s)'); ylabel('Position (m)');
-title('Quadrotor Position (With Initial Conditions)');
+title('Quadrotor Position (clean) (With Initial Conditions)');
 legend('x-position', 'y-position', 'Location', 'best'); grid on;
 
 subplot(2,1,2);
 plot(time, rad2deg(states2(:,5)), 'g-', 'LineWidth', 2);
 xlabel('Time (s)'); ylabel('Angle (deg)');
-title('Pitch Angle Evolution'); grid on;
+title('Pitch Angle Evolution (clean)'); grid on;
 
 disp('=== Overal MATRICES ===');
 disp('States matrix with initial conditions (first 5 rows):');
@@ -144,53 +147,32 @@ disp(output_table(1:5,:));
 
 %% STEP 7: KALMAN FILTER
 
-Kalman_prediction = zeros(6,length(time)); % System state by Kalman filter
-Kalman_prediction(:,1) = x0;
-R = eye(3)*10^-3; % Measurement noise variance
-Q = eye(6)*10^-3; % Process noise variance
-P0 = eye(6); % Initial variance
-
-for i = 2:length(time)
-
-   
-    % Prediction stage
-    F = eye(6)+dt*[0  1  0  0   0   0;
-                   0  0  0  0   -cos(Kalman_prediction(5,i-1))*(control_input(i-1,1)+control_input(i-1,2))/m   0;
-                   0  0  0  1   0   0;
-                   0  0  0  0   -sin(Kalman_prediction(5,i-1))*(control_input(i-1,1)+control_input(i-1,2))/m   0;
-                   0  0  0  0   0   1;
-                   0  0  0  0   0   0]; % F matrix depends on the state, so this is the way
-    x_est = F*Kalman_prediction(:,i-1); %NOISE
-    P_est = F * P0 * transpose(F) + Q; % P_i^-
-   
-    % Correction stage
-    
-    k = P_est * transpose(C) / (C * P0 * transpose(C)+R); % Kalman gain (6 by 3 matrix)
-    Kalman_prediction(:,i) = (eye(6)-k * C) * x_est + k * transpose(Ys2(i,:));
-    P0 = (eye(6) - k * C) * P_est; % Technically iteration stage, but it is united with the last correction step
-end
-%% FIGURE 5: Temporary display of Kalman filter results
+% Kalman_prediction = kalman_filter(A,C,control_input,time,rotor_data,x0,Ys);
+%% FIGURE 5: Noisy Simulation
 figure(5)
 
 subplot(2,1,1);
-plot(time,Kalman_prediction(1,:), 'b-', 'LineWidth', 2); hold on;
-plot(time, Kalman_prediction(3,:), 'r-', 'LineWidth', 2);
+plot(time, states1(:,1), 'b-', 'LineWidth', 2); hold on;
+plot(time, states1(:,3), 'r-', 'LineWidth', 2);
+xlabel('Time (s)'); ylabel('Position (m)');
+title('Quadrotor Position (noisy) (With Initial Conditions)');
+legend('x-position', 'y-position', 'Location', 'best'); grid on;
+
+subplot(2,1,2);
+plot(time, rad2deg(states1(:,5)), 'g-', 'LineWidth', 2);
+xlabel('Time (s)'); ylabel('Angle (deg)');
+title('Pitch Angle Evolution (noisy)'); grid on;
+%% FIGURE 6: Temporary display of Kalman filter results
+figure(6)
+
+subplot(2,1,1);
+plot(time,Kalman_prediction(:,1), 'b-', 'LineWidth', 2); hold on;
+plot(time, Kalman_prediction(:,3), 'r-', 'LineWidth', 2);
 xlabel('Time (s)'); ylabel('Position (m)');
 title('Quadrotor Position (With Initial Conditions) From Extended Kalman Filter');
 legend('x-position', 'y-position', 'Location', 'best'); grid on;
 
 subplot(2,1,2);
-plot(time, rad2deg(Kalman_prediction(5,:)), 'g-', 'LineWidth', 2);
+plot(time, rad2deg(Kalman_prediction(:,5)), 'g-', 'LineWidth', 2);
 xlabel('Time (s)'); ylabel('Angle (deg)');
 title('Pitch Angle Evolution'); grid on;
-
-disp('=== Overal MATRICES ===');
-disp('States matrix with initial conditions (first 5 rows):');
-state_names = {'x_pos', 'x_vel', 'y_pos', 'y_vel', 'theta', 'theta_dot'};
-results_table = array2table([time', states2], 'VariableNames', ['Time', state_names]);
-disp(results_table(1:5,:));
-
-disp('Output matrix with initial conditions (first 5 rows):');
-output_names = {'y_measured', 'theta_measured', 'theta_dot_measured'};
-output_table = array2table([time', Ys2], 'VariableNames', ['Time', output_names]);
-disp(output_table(1:5,:));
