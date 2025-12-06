@@ -2,6 +2,8 @@ clc;
 clear; 
 close all;
 
+rng(42);
+
 %%DEFINE VARIABLES
 m = 0.5;         % mass [kg] 
 r = 0.15;        % distance from center to rotors [m]
@@ -32,6 +34,9 @@ A = [0  1  0  0   0   0;
      0  0  0  0   0   1;
      0  0  0  0   0   0];
 
+% It desscribes the states, so let's say it is rotor data 
+rotor_data.A = A;
+
 % B matrix - Control input
 B = [0       0;
      0       0;
@@ -44,6 +49,9 @@ B = [0       0;
 C = [0  0  1  0  0  0;
      0  0  0  0  1  0;
      0  0  0  0  0  1];
+
+rotor_data.C = C; % It says what we measure, so let's say it is rotor data 
+% (like what the sensors are)
 
 D = zeros(3,2);  
 
@@ -64,8 +72,14 @@ control_input = [CU1; CU2]';
 
 %% STEP 6: DEFINE NOISE AMPLITUDE
 
-state_noise_amp = 0.004; % Process noise amplitude
-measurement_noise_amp = 0.05; % Measurement noise amplitude
+noise_data.state_noise_amp = 0.004; % Process noise amplitude
+noise_data.output_noise_amp = 0.05; % Measurement noise amplitude
+
+%% STEP 7: SIMULATION
+
+x0 = [0;0;1;0;0;0];
+
+[state, output, errors] = simulation_quadrotor(rotor_data, control_input, noise_data, time, x0);
 
 %% FIGURE 1: PLOT CONTROL INPUTS
 figure(1);
@@ -79,118 +93,85 @@ grid on;
 
 %% FIGURE 2: SYSTEM RESPONSE TO INPUTS
 figure(2);
-[output1, ~] = quadrotor_clean_physics_sim(A, C, control_input, time, rotor_data, []);
-% system starts from zero
 
 % Plot the outputs (measured states)
-plot(time, output1(:,1), 'b-', 'LineWidth', 2); hold on;
-plot(time, rad2deg(output1(:,2)), 'r-', 'LineWidth', 2);
-plot(time, rad2deg(output1(:,3)), 'g-', 'LineWidth', 2);
+plot(time, output.clean(:,1), 'b-', 'LineWidth', 2); hold on;
+plot(time, rad2deg(output.clean(:,2)), 'r-', 'LineWidth', 2);
+plot(time, rad2deg(output.clean(:,3)), 'g-', 'LineWidth', 2);
 xlabel('Time (s)');
 ylabel('Output');
-title('System Response to Control Inputs (Zero Initial Conditions)');
+title('System Response to Control Inputs');
 legend('y-position', 'theta', 'theta-dot', 'Location', 'best');
 grid on;
 
 %% FIGURE 3: PLOT OUTPUT DATA
 
-% Add noise here. For now, it is identical to Figure 2
-
 figure(3);
-% This is the same as Figure 2 but showing the data extraction
-[Ys, states1] = quadrotor_NOISY_physics_sim(A, C, control_input, time, rotor_data, [], state_noise_amp, measurement_noise_amp);
 
-plot(time, Ys(:,1), 'b-', 'LineWidth', 2); hold on;
-plot(time, rad2deg(Ys(:,2)), 'r-', 'LineWidth', 2);
-plot(time, rad2deg(Ys(:,3)), 'g-', 'LineWidth', 2);
+plot(time, output.real(:,1), 'b-', 'LineWidth', 2); hold on;
+plot(time, rad2deg(output.real(:,2)), 'r-', 'LineWidth', 2);
+plot(time, rad2deg(output.real(:,3)), 'g-', 'LineWidth', 2);
 xlabel('Time (s)');
 ylabel('Output');
-title('Output Data: Ys vs Ti (Zero Initial Conditions)');
+title('Output Data: Ys vs Ti');
 legend('y-measured', 'theta-measured', 'theta-dot-measured', 'Location', 'best');
 grid on;
 
-%% FIGURE 4: SYSTEM RESPONSE WITH INITIAL CONDITIONS
+%% FIGURE 4: SYSTEM RESPONSE
 figure(4);
-
-x0 = [0; 0; 1; 0; 0; 0];  % Start at x=0, y=1m, level hovering
-
-%[Ys2, ~, states2] = lsim(quadrotor_sys, control_input, time, x0); - for
-%linear systems
-[Ys2, states2] = quadrotor_clean_physics_sim(A, C, control_input, time, rotor_data, x0);
 
 % Plot all states to see complete evolution
 subplot(2,1,1);
-plot(time, states2(:,1), 'b-', 'LineWidth', 2); hold on;
-plot(time, states2(:,3), 'r-', 'LineWidth', 2);
+plot(time, state.real(:,1), 'b-', 'LineWidth', 2); hold on;
+plot(time, state.real(:,3), 'r-', 'LineWidth', 2);
 xlabel('Time (s)'); ylabel('Position (m)');
-title('Quadrotor Position (With Initial Conditions)');
+title('Quadrotor Position (clean) (With Initial Conditions)');
 legend('x-position', 'y-position', 'Location', 'best'); grid on;
 
 subplot(2,1,2);
-plot(time, rad2deg(states2(:,5)), 'g-', 'LineWidth', 2);
+plot(time, rad2deg(state.real(:,5)), 'g-', 'LineWidth', 2);
 xlabel('Time (s)'); ylabel('Angle (deg)');
-title('Pitch Angle Evolution'); grid on;
+title('Pitch Angle Evolution (clean)'); grid on;
 
 disp('=== Overal MATRICES ===');
 disp('States matrix with initial conditions (first 5 rows):');
 state_names = {'x_pos', 'x_vel', 'y_pos', 'y_vel', 'theta', 'theta_dot'};
-results_table = array2table([time', states2], 'VariableNames', ['Time', state_names]);
+results_table = array2table([time', state.real], 'VariableNames', ['Time', state_names]);
 disp(results_table(1:5,:));
 
 disp('Output matrix with initial conditions (first 5 rows):');
 output_names = {'y_measured', 'theta_measured', 'theta_dot_measured'};
-output_table = array2table([time', Ys2], 'VariableNames', ['Time', output_names]);
+output_table = array2table([time', output.real], 'VariableNames', ['Time', output_names]);
 disp(output_table(1:5,:));
 
 %% STEP 7: KALMAN FILTER
 
-Kalman_prediction = zeros(6,length(time)); % System state by Kalman filter
-Kalman_prediction(:,1) = x0;
-R = eye(3)*10^-3; % Measurement noise variance
-Q = eye(6)*10^-3; % Process noise variance
-P0 = eye(6); % Initial variance
-
-for i = 2:length(time)
-
-   
-    % Prediction stage
-    F = eye(6)+dt*[0  1  0  0   0   0;
-                   0  0  0  0   -cos(Kalman_prediction(5,i-1))*(control_input(i-1,1)+control_input(i-1,2))/m   0;
-                   0  0  0  1   0   0;
-                   0  0  0  0   -sin(Kalman_prediction(5,i-1))*(control_input(i-1,1)+control_input(i-1,2))/m   0;
-                   0  0  0  0   0   1;
-                   0  0  0  0   0   0]; % F matrix depends on the state, so this is the way
-    x_est = F*Kalman_prediction(:,i-1); %NOISE
-    P_est = F * P0 * transpose(F) + Q; % P_i^-
-   
-    % Correction stage
-    
-    k = P_est * transpose(C) / (C * P0 * transpose(C)+R); % Kalman gain (6 by 3 matrix)
-    Kalman_prediction(:,i) = (eye(6)-k * C) * x_est + k * transpose(Ys2(i,:));
-    P0 = (eye(6) - k * C) * P_est; % Technically iteration stage, but it is united with the last correction step
-end
-%% FIGURE 5: Temporary display of Kalman filter results
+%% FIGURE 5: Noisy Simulation
 figure(5)
 
 subplot(2,1,1);
-plot(time,Kalman_prediction(1,:), 'b-', 'LineWidth', 2); hold on;
-plot(time, Kalman_prediction(3,:), 'r-', 'LineWidth', 2);
+plot(time, state.real(:,1), 'b-', 'LineWidth', 2); hold on;
+plot(time, state.real(:,3), 'r-', 'LineWidth', 2);
+xlabel('Time (s)'); ylabel('Position (m)');
+title('Quadrotor Position (noisy) (With Initial Conditions)');
+legend('x-position', 'y-position', 'Location', 'best'); grid on;
+
+subplot(2,1,2);
+plot(time, rad2deg(state.real(:,5)), 'g-', 'LineWidth', 2);
+xlabel('Time (s)'); ylabel('Angle (deg)');
+title('Pitch Angle Evolution (noisy)'); grid on;
+%% FIGURE 6: Temporary display of Kalman filter results
+figure(6)
+
+subplot(2,1,1);
+plot(time, state.estimate(:,1), 'b-', 'LineWidth', 2); hold on;
+plot(time, state.estimate(:,3), 'r-', 'LineWidth', 2);
 xlabel('Time (s)'); ylabel('Position (m)');
 title('Quadrotor Position (With Initial Conditions) From Extended Kalman Filter');
 legend('x-position', 'y-position', 'Location', 'best'); grid on;
 
 subplot(2,1,2);
-plot(time, rad2deg(Kalman_prediction(5,:)), 'g-', 'LineWidth', 2);
+plot(time, rad2deg(state.estimate(:,5)), 'g-', 'LineWidth', 2);
 xlabel('Time (s)'); ylabel('Angle (deg)');
 title('Pitch Angle Evolution'); grid on;
 
-disp('=== Overal MATRICES ===');
-disp('States matrix with initial conditions (first 5 rows):');
-state_names = {'x_pos', 'x_vel', 'y_pos', 'y_vel', 'theta', 'theta_dot'};
-results_table = array2table([time', states2], 'VariableNames', ['Time', state_names]);
-disp(results_table(1:5,:));
-
-disp('Output matrix with initial conditions (first 5 rows):');
-output_names = {'y_measured', 'theta_measured', 'theta_dot_measured'};
-output_table = array2table([time', Ys2], 'VariableNames', ['Time', output_names]);
-disp(output_table(1:5,:));
