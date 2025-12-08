@@ -30,7 +30,7 @@ tiledlayout(3, 1, 'TileSpacing', 'compact', 'Padding', 'compact');
 nexttile;
 plot(time, output_clean(:,1), 'b-', 'LineWidth', 1.5); hold on;
 plot(time, output.real(:,1), 'r.', 'MarkerSize', 8);
-plot(time, output_filtered(:,1), 'g--', 'LineWidth', 1.5);
+plot(time, output_filtered(:,1), 'g-', 'LineWidth', 1.5);
 ylabel('y (m)'); grid on;
 legend('Ground Truth', 'Noisy Measurement', 'EKF Estimate', 'Location', 'best');
 
@@ -38,14 +38,14 @@ legend('Ground Truth', 'Noisy Measurement', 'EKF Estimate', 'Location', 'best');
 nexttile;
 plot(time, rad2deg(output_clean(:,2)), 'b-', 'LineWidth', 1.5); hold on;
 plot(time, rad2deg(output.real(:,2)), 'r.', 'MarkerSize', 8);
-plot(time, rad2deg(output_filtered(:,2)), 'g--', 'LineWidth', 1.5);
+plot(time, rad2deg(output_filtered(:,2)), 'g-', 'LineWidth', 1.5);
 ylabel('theta (deg)'); grid on;
 
 % theta-dot (angular velocity)
 nexttile;
 plot(time, rad2deg(output_clean(:,3)), 'b-', 'LineWidth', 1.5); hold on;
 plot(time, rad2deg(output.real(:,3)), 'r.', 'MarkerSize', 8);
-plot(time, rad2deg(output_filtered(:,3)), 'g--', 'LineWidth', 1.5);
+plot(time, rad2deg(output_filtered(:,3)), 'g-', 'LineWidth', 1.5);
 ylabel('theta-dot (deg/s)'); xlabel('Time (s)'); grid on;
 
 sgtitle('Measured States: Ground Truth vs Noisy vs EKF Estimate');
@@ -60,13 +60,13 @@ for i = 1:6
     nexttile;
     if i <= 4
         plot(time, state.clean(:,i), 'b-', 'LineWidth', 1.5); hold on;
-        plot(time, state.estimate(:,i), 'g--', 'LineWidth', 1.5);
-        plot(time, state.real(:,i), 'r--', 'LineWidth', 1.5);
+        plot(time, state.estimate(:,i), 'g-', 'LineWidth', 1.5);
+        plot(time, state.real(:,i), 'r-', 'LineWidth', 1.5);
         ylabel(state_labels{i});
     else
         plot(time, rad2deg(state.clean(:,i)), 'b-', 'LineWidth', 1.5); hold on;
-        plot(time, rad2deg(state.estimate(:,i)), 'g--', 'LineWidth', 1.5);
-        plot(time, rad2deg(state.real(:,i)), 'r--', 'LineWidth', 1.5);
+        plot(time, rad2deg(state.estimate(:,i)), 'g-', 'LineWidth', 1.5);
+        plot(time, rad2deg(state.real(:,i)), 'r-', 'LineWidth', 1.5);
         ylabel(state_labels{i});
     end
     grid on;
