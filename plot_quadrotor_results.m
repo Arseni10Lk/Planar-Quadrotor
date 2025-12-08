@@ -15,6 +15,7 @@ function plot_quadrotor_results(time, state, output, C, errors)
 %
 
 % Recompute clean and filtered outputs for consistency
+
 output_clean = (C * state.clean')';
 output_filtered = (C * state.estimate')';
 
@@ -60,10 +61,12 @@ for i = 1:6
     if i <= 4
         plot(time, state.clean(:,i), 'b-', 'LineWidth', 1.5); hold on;
         plot(time, state.estimate(:,i), 'g--', 'LineWidth', 1.5);
+        plot(time, state.real(:,i), 'r--', 'LineWidth', 1.5);
         ylabel(state_labels{i});
     else
         plot(time, rad2deg(state.clean(:,i)), 'b-', 'LineWidth', 1.5); hold on;
         plot(time, rad2deg(state.estimate(:,i)), 'g--', 'LineWidth', 1.5);
+        plot(time, rad2deg(state.real(:,i)), 'r--', 'LineWidth', 1.5);
         ylabel(state_labels{i});
     end
     grid on;
@@ -73,7 +76,7 @@ for i = 1:6
 end
 
 sgtitle('Full State: Ground Truth vs EKF Estimate');
-legend('Ground Truth', 'EKF Estimate', 'Location', 'southoutside', 'Orientation', 'horizontal');
+legend('Ground Truth', 'EKF Estimate', 'Real State', 'Location', 'southoutside', 'Orientation', 'horizontal');
 
 
 end

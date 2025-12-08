@@ -2,7 +2,7 @@ clc;
 clear; 
 close all;
 
-rng(42);
+rng(45);
 
 %%DEFINE VARIABLES
 m = 0.5;         % mass [kg] 
@@ -54,10 +54,6 @@ rotor_data.C = C; % It says what we measure, so let's say it is rotor data
 % (like what the sensors are)
 
 D = zeros(3,2);  
-
-%% STEP 3: CREATE STATE-SPACE OBJECT
-quadrotor_sys = ss(A, B, C, D);
-
 
 %% STEP 4: DEFINE TIME VECTOR
 time = 0:dt:t_max;  
