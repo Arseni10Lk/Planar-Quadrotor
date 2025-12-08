@@ -87,7 +87,7 @@ for t = 2:length(time)
     % getting all the noise characteristics
     state_noise = noise_data.state_noise_amp * randn(1, size(A, 1));
     output_noise = noise_data.output_noise_amp * randn(1, size(C, 1));
-    
+
     state.real(t, :) = state.real(t - 1, :) + delta_x_real(:)' + state_noise;
     output.real(t, :) = (C*state.real(t, :)')' + output_noise;
 
