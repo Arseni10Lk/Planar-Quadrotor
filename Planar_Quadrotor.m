@@ -82,6 +82,6 @@ x0 = [0;0;1;0;0;0];
 [state, output, errors] = simulation_quadrotor(rotor_data, control_input, noise_data, time, x0);
 
 % Plot results using dedicated function
-plot_quadrotor_results(time, state, output, rotor_data.C);
+plot_quadrotor_results(time, state, output, rotor_data.C, errors);
 
 

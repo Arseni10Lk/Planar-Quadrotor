@@ -1,28 +1,31 @@
-function plot_quadrotor_results(time, state, output, C)
+function plot_quadrotor_results(time, state, output, C, errors)
 % plot_quadrotor_results - Visualize EKF performance for planar quadrotor
 %
 % Inputs:
 %   time       : [N x 1] time vector (seconds)
 %   state      : struct with fields .clean, .real, .estimate (each N x 6)
-%   output     : struct with field .real (N x 3) = [y_meas, theta_meas, thetadot_meas]
+%   output     : struct with field .real (N x 3) = [y, theta, theta-dot] (measured)
 %   C          : Measurement matrix (3x6)
+%   errors     : (for future use)
 %
-% Generates two figures:
+% Outputs two figures:
 %   1. Measured states: y, theta, theta-dot → clean vs noisy vs EKF
-%   2. Full state vector: x, xdot, y, ydot, theta, thetadot → clean vs EKF
+%   2. Full state vector: all 6 states → clean vs EKF
+%
+%
 
 % Recompute clean and filtered outputs for consistency
 output_clean = (C * state.clean')';
 output_filtered = (C * state.estimate')';
 
-% Ensure time is a column vector
+% Ensure column vector
 time = time(:);
 
-%% FIGURE 1: Measured States — Clean, Noisy, Filtered
+%% FIGURE 1: Measured States — Ground Truth, Noisy, EKF
 figure('Name', 'EKF Performance: Measured States', 'NumberTitle', 'off');
 tiledlayout(3, 1, 'TileSpacing', 'compact', 'Padding', 'compact');
 
-% y position (m)
+% y (altitude)
 nexttile;
 plot(time, output_clean(:,1), 'b-', 'LineWidth', 1.5); hold on;
 plot(time, output.real(:,1), 'r.', 'MarkerSize', 8);
@@ -30,14 +33,14 @@ plot(time, output_filtered(:,1), 'g--', 'LineWidth', 1.5);
 ylabel('y (m)'); grid on;
 legend('Ground Truth', 'Noisy Measurement', 'EKF Estimate', 'Location', 'best');
 
-% Theta (degrees)
+% theta (pitch angle)
 nexttile;
 plot(time, rad2deg(output_clean(:,2)), 'b-', 'LineWidth', 1.5); hold on;
 plot(time, rad2deg(output.real(:,2)), 'r.', 'MarkerSize', 8);
 plot(time, rad2deg(output_filtered(:,2)), 'g--', 'LineWidth', 1.5);
 ylabel('theta (deg)'); grid on;
 
-% Theta-dot (deg/s)
+% theta-dot (angular velocity)
 nexttile;
 plot(time, rad2deg(output_clean(:,3)), 'b-', 'LineWidth', 1.5); hold on;
 plot(time, rad2deg(output.real(:,3)), 'r.', 'MarkerSize', 8);
@@ -50,21 +53,18 @@ sgtitle('Measured States: Ground Truth vs Noisy vs EKF Estimate');
 figure('Name', 'EKF Performance: Full State Estimation', 'NumberTitle', 'off');
 tiledlayout(3, 2, 'TileSpacing', 'compact', 'Padding', 'compact');
 
-% State variable names for y-labels
-state_names = {'x (m)', 'x-dot (m/s)', 'y (m)', 'y-dot (m/s)', 'theta (deg)', 'theta-dot (deg/s)'};
+state_labels = {'x (m)', 'x-dot (m/s)', 'y (m)', 'y-dot (m/s)', 'theta (deg)', 'theta-dot (deg/s)'};
 
 for i = 1:6
     nexttile;
     if i <= 4
-        % Linear states: x, xdot, y, ydot (in m or m/s)
         plot(time, state.clean(:,i), 'b-', 'LineWidth', 1.5); hold on;
         plot(time, state.estimate(:,i), 'g--', 'LineWidth', 1.5);
-        ylabel(state_names{i});
+        ylabel(state_labels{i});
     else
-        % Angular states: convert to degrees
         plot(time, rad2deg(state.clean(:,i)), 'b-', 'LineWidth', 1.5); hold on;
         plot(time, rad2deg(state.estimate(:,i)), 'g--', 'LineWidth', 1.5);
-        ylabel(state_names{i});
+        ylabel(state_labels{i});
     end
     grid on;
     if i >= 5
@@ -74,3 +74,6 @@ end
 
 sgtitle('Full State: Ground Truth vs EKF Estimate');
 legend('Ground Truth', 'EKF Estimate', 'Location', 'southoutside', 'Orientation', 'horizontal');
+
+
+end
