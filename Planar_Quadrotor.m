@@ -68,16 +68,52 @@ control_input = [CU1; CU2]';
 
 %% STEP 6: DEFINE NOISE AMPLITUDE
 
-noise_data.state_noise_amp = 0.004; % Process noise amplitude
-noise_data.output_noise_amp = 0.05; % Measurement noise amplitude
+noise_data1.state_noise_amp = 0.002; % Process noise amplitude
+noise_data1.output_noise_amp = 0.025; % Measurement noise amplitude
+
+noise_data2.state_noise_amp = 0.004; % Process noise amplitude
+noise_data2.output_noise_amp = 0.05; % Measurement noise amplitude.
+
+noise_data3.state_noise_amp = 0.014; % Process noise amplitude
+noise_data3.output_noise_amp = 0.15; % Measurement noise amplitude.
+
+noise_data4.state_noise_amp = 0.08; % Process noise amplitude
+noise_data4.output_noise_amp = 0.25; % Measurement noise amplitude.
 
 %% STEP 7: SIMULATION
 
 x0 = [0;0;1;0;0;0];
 
-[state, output, errors] = simulation_quadrotor(rotor_data, control_input, noise_data, time, x0);
+state_labels = {'x', 'x-dot', 'y', 'y-dot', 'theta', 'theta-dot'};
+fprintf('\n RMSE Values (State: [x, x-dot, y, y-dot, theta, theta-dot]) \n');
 
-% Plot results using dedicated function
-plot_quadrotor_results(time, state, output, rotor_data.C, errors);
+% 1: Lowest Noise
+[state1, output1, errors1] = simulation_quadrotor(rotor_data, control_input, noise_data1, time, x0);
+
+fprintf('Case 1 : ');
+disp(errors1.rmse_states);
+plot_quadrotor_results(time, state1, output1, rotor_data.C, errors1);
+sgtitle('Case 1: Low Noise');
+
+% 2: Medium-Low Noise
+[state2, output2, errors2] = simulation_quadrotor(rotor_data, control_input, noise_data2, time, x0);
+fprintf('Case 2 : ');
+disp(errors2.rmse_states);
+plot_quadrotor_results(time, state2, output2, rotor_data.C, errors2);
+sgtitle('Case 2: Medium-Low Noise ');
+
+% 3: Medium-High Noise 
+[state3, output3, errors3] = simulation_quadrotor(rotor_data, control_input, noise_data3, time, x0);
+fprintf('Case 3 : ');
+disp(errors3.rmse_states);
+plot_quadrotor_results(time, state3, output3, rotor_data.C, errors3);
+sgtitle('Case 3: Medium-High Noise ');
+
+% 4: Highest Noise
+[state4, output4, errors4] = simulation_quadrotor(rotor_data, control_input, noise_data4, time, x0);
+fprintf('Case 4 : ');
+disp(errors4.rmse_states);
+plot_quadrotor_results(time, state4, output4, rotor_data.C, errors4);
+sgtitle('Case 4: High Noise ');
 
 
