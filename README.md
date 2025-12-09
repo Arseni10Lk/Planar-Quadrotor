@@ -102,7 +102,8 @@ $$
 
 
 
-### Linearized System Matrices
+#### Linearized Continuous-Time Matrices
+By taking partial derivatives, we obtain the **Jacobian matrices**:
 
 * **A Matrix - System Dynamics (6×6):**
 
@@ -151,6 +152,12 @@ $$
 
 - $$\mathbf{D} = 0_{m \times n}$$, because control inputs don't directly appear in sensor readings.
 The sensors only measure the drone's actual state, not the commands you're sending
+
+#### Discrete-Time EKF Matrices
+For the discrete EKF update, we use:
+- **State transition Jacobian**: $F = I + A \Delta t$
+- **Measurement Jacobian**: $H = C$ (constant)
+
 ### F and H matrices
 
 $$F = I + A \Delta t$$, where I symbolizes the old state and A symbolizes the change of it.
@@ -247,7 +254,41 @@ This step is just a technicality for updating current state and variance matrix 
 
 - $\ x̂_{i-1}^- = x̂_{i} $
 - $\ P_{i-1} = P_i $
+  
+# MATLAB Implementation Breakdown
 
+The code is modularized into three key components:
+
+## 1. Main Script (`Planar_Quadrotor.m`)
+
+Initializes physical parameters and simulation settings (`dt = 0.01 s`, `T = 10 s`).  
+Defines time-varying control inputs to excite the system:
+
+```matlab
+CU1 = 3 + 0.001*cos(2*time);
+CU2 = 3 + 0.001*sin(2*time);
+```
+These represent small oscillations around hover thrust (~3 N), ensuring nontrivial dynamics
+Calls simulation_quadrotor.m to run simulation + EKF.
+Calls plot_quadrotor_results.m to generate final figures.
+## 2. Simulation & EKF (simulation_quadrotor.m)
+Performs three parallel simulations in one loop:
+- state.clean: Noise-free ground truth via nonlinear integration of the true dynamics.
+- state.real: "Real-world" trajectory with added process + sensor noise.
+- state.estimate: Real-time EKF:
+    - Prediction: Propagates state using the full nonlinear dynamics (not linear model).
+    - Jacobian F: Computed at each step as $$F = I + A \Delta t$$, where $$A$$ is evaluated using the surrent estimates of \theta and control inputs $$u_1$$, $$u_2$$.
+
+Noise tuning:
+- Process noise covariance: $$Q=10^-5I_6$$ (high trust in physics model)
+- Measurement noise covariance: $$R=10^-1I_3$$
+## 3. Plotting Function (plot_quadrotor_results.m)
+Generates two figures showing ground truth, noisy measurements, and EFK estinates together for all measured states.
+### Simulation setup
+It utilizes the:  - initial state hovering at 1 metre altitude
+                  - Process noise.
+                  - Measurement noise
+                  
 ## Results & Visualization
 ### Figure 1: Measured States — Ground Truth vs Noisy vs EKF
 ![Measured States](Measured_state.png)
