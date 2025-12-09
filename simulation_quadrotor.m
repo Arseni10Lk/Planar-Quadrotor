@@ -142,13 +142,27 @@ for t = 2:length(time)
 
 end
 
+
 errors.output_clean_VS_real_total = output.real - output.clean;
 errors.output_clean_VS_filtered_total = output.filtered - output.clean;
 errors.output_real_VS_filtered_total = output.filtered - output.real;
 
 errors.states_clean_VS_real_total = state.real - state.clean;
-
+errors.states_real_VS_estimate = state.real - state.estimate;
 errors.state_real_VS_output_real = output.real - state.real(:, [3, 5, 6]);
 errors.state_real_VS_output_filtered = output.filtered - state.real(:, [3, 5, 6]);
+
+% Calculate the Mean Squared Error for each column (state variable)
+num_states = size(errors.states_real_VS_estimate, 2);
+rmse_values = zeros(1, num_states);
+
+for i = 1:num_states
+    % RMSE = sqrt(mean(error^2))
+    rmse_values(i) = sqrt(mean(errors.states_real_VS_estimate(:, i).^2));
+end
+
+% Store the RMSE values in the errors structure
+% state variables are typically: [x, dx, y, dy, theta, dtheta]
+errors.rmse_states = rmse_values;
 
 end
