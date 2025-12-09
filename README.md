@@ -176,6 +176,17 @@ H = \begin{bmatrix}
 \end{bmatrix}
 $$
 
+
+### Noise Modeling
+- **Process noise**: $\sigma = 0.004$ (applied to all state derivatives)
+- **Measurement noise**: $\sigma = 0.05$ (on each sensor channel)
+
+The simulation generates three trajectories:
+- `state.clean`: Noise-free ground truth (nonlinear integration),
+- `state.real`: "Real-world" with added process + sensor noise,
+- `state.estimate`: EKF output (updated at every time step).
+
+
 ### Constant Terms
 
 * **Gravity vector $G$:**  
@@ -236,3 +247,15 @@ This step is just a technicality for updating current state and variance matrix 
 
 - $\ x̂_{i-1}^- = x̂_{i} $
 - $\ P_{i-1} = P_i $
+
+## Results & Visualization
+### Figure 1: Measured States — Ground Truth vs Noisy vs EKF
+![Measured States](Measured_state.png)
+
+> The EKF (green) accurately tracks ground truth (blue) despite significant sensor noise (red). Vertical position ($y$), pitch angle ($\theta$), and angular rate ($\dot{\theta}$) are all well-estimated, confirming successful fusion of dynamics and measurements.
+
+### Figure 2: Full State Estimation — Ground Truth vs EKF
+![Full State](Full_state.png)
+
+> Even **unmeasured states** like horizontal position ($x$) and velocities ($\dot{x}, \dot{y}$) are reconstructed accurately. This is possible due to **dynamic coupling**: thrust affects both $y$ and $\theta$, which indirectly informs $x$-motion through $\sin\theta$ and $\cos\theta$ terms.
+
