@@ -41,16 +41,10 @@ $$
 - $$W_k$$ ,Is process noise. This comes from imperfect physics modeling, eg, Unmodeled aerodynamics, Parameter uncertainties.
 
 ### State-Space Representation
-The IMU measures total acceleration including gravity, so we explicitly subtract $g$ when processing the $\ddot{y}$ measurement. The standard linearized system of state-space equations:
+The standard linearized system of state-space equations:
 
-$$
-\begin{aligned}
-\dot{\mathbf{x}} &= A\mathbf{x} + B_s\mathbf{u} + G \\
-\mathbf{y} &= C\mathbf{x} + D\mathbf{u}
-\end{aligned}
-$$
-
-
+$x_k = f(x_{k-1}, u_k, w_k)$
+> Where the nonlinear dynamics are defined by the function $f(x_k, u_k)$, which includes gravity as part of the physics model.
 
 ### System Definitions
 
@@ -193,22 +187,6 @@ The simulation generates three trajectories:
 - `state.real`: "Real-world" with added process + sensor noise,
 - `state.estimate`: EKF output (updated at every time step).
 
-
-### Constant Terms
-
-* **Gravity vector $G$:**  
-
-$$
-G = \begin{bmatrix}
-0 \\
-0 \\
-0 \\
--g \\
-0 \\
-0
-\end{bmatrix}
-$$
-
 ### Key Linearization Results
 
 **Partial derivatives:**  
@@ -235,6 +213,8 @@ delta_x_estimate(2) = (-sin(theta_estimate)*(control_input(t,1)+control_input(t,
 delta_x_estimate(4) = (cos(theta_estimate)*(control_input(t,1)+control_input(t,2))/m - g) * dt;
 ```
 This ensures the prediction respects the actual dynamics.
+> **Note on gravity**: The term $$-mg$$ in the vertical force balance accounts for the gravitational pull.
+> This results in a $$-g$$ term in the $$\ddot{y}$$ computation as seen in the code.
 
 Then, we linearize the system around the current estimate to predict how uncertainty (covariance) evolves. We build the Jacobian `F` matrix like this:
 
@@ -252,7 +232,7 @@ We then predict error covariance:
 ```matlab
 P_prediction = F * P * F' + Q;
 ```
-Where `Q = eye(6)*1e-5` represents small process noise (we trust the physics model and EJ 😅).
+Where `Q = eye(6)*1e-5` represents small process noise (we trust the physics model more).
 
 ### Correction step
 Next, we correct the estimate using the latest noisy sensor data (`output.real`)
