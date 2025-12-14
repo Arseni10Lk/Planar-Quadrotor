@@ -30,22 +30,6 @@ Where:
 - g: gravitational acceleration
 - u₁, u₂: rotor thrust forces
 
-### Linearization Process
-We linearize the system by computing Jacobian matrices - taking partial derivatives of each equation with respect to all state variables and control inputs. This creates a linear approximation of the system dynamics that can be used for state estimation.
-
-$$
-x_k = F x_{k-1} + B_k u_k + w_k
-$$
-
-- $$B_k = B_s \Delta t$$
-- $$W_k$$ ,Is process noise. This comes from imperfect physics modeling, eg, Unmodeled aerodynamics, Parameter uncertainties.
-
-### State-Space Representation
-The standard linearized system of state-space equations:
-
-$x_k = f(x_{k-1}, u_k, w_k)$
-> Where the nonlinear dynamics are defined by the function $f(x_k, u_k)$, which includes gravity as part of the physics model.
-
 ### System Definitions
 
 ### State Vector (6 elements)
@@ -70,36 +54,36 @@ u_2
 \end{bmatrix}
 $$
 
-### Observation Vector (3 elements)
-Normally, an IMU provides linear accelerations and angular velocities in the body frame, which would require coordinate transformations. However, to simplify our observation model, we assume we can directly measure:
+### System Linearization for the Extended Kalman Filter
+The Extended Kalman Filter requires a local linear approximation of the nonlinear dynamics to propagate uncertainty (covariance). This is achieved by computing the Jacobian matrices of the system equations with respect to the state and measurement variables.
 
-- Vertical position $$y$$ from an altitude sensor
-- Pitch angle $$\theta$$ from the IMU  
-- Angular velocity $$\dot{\theta}$$ from the IMU gyroscope
-
-This allows us to use a simpler observation equation $$y_k = H x_k + v_k$$ where the measurements directly correspond to state variables.
+**Nonlinear Process Function**
+The true dynamics are governed by:
 
 $$
-\mathbf{y} = 
-\begin{bmatrix}
-y \\
-\theta \\
-\dot{\theta} \\
-\end{bmatrix}
+\begin{aligned}
+\ddot{x} &= \frac{-(u_1 + u_2) \sin\theta}{m} \\
+\ddot{y} &= \frac{(u_1 + u_2)\cos\theta}{m} - g \\
+\ddot{\theta} &= \frac{r(u_1 - u_2)} {I}
+\end{aligned}
 $$
 
-$$
-y_k = H x_k + v_k
-$$
+> In the code, these are used directly (not linearized) to predict the next state. This will is later shown below in more detail.
 
- - $$v_k$$ is measurement noise (sensor errors, inaccuracies)
+**Jacobian for Covariance Propagation**
+To update the error covariance, we compute the state transition Jacobian F, derived from the partial derivatives of the dynamics:
+- $\frac{\partial \ddot{x}}{\partial \theta} = -\frac{\cos\theta}{m}(u_1 + u_2)$
+  
+- $\frac{\partial \ddot{y}}{\partial \theta} = -\frac{\sin\theta}{m}(u_1 + u_2)$
+  
+- $\frac{\partial \ddot{x}}{\partial u_1} = -\frac{\sin\theta}{m}$, $\frac{\partial \ddot{x}}{\partial u_2} = -\frac{\sin\theta}{m}$
+  
+  
+- $\frac{\partial \ddot{y}}{\partial u_1} = \frac{\cos\theta}{m}$, $\frac{\partial \ddot{y}}{\partial u_2} = \frac{\cos\theta}{m}$
 
+- $\frac{\partial \ddot{\theta}}{\partial u_1} = \frac{r}{I}$, $\frac{\partial \ddot{\theta}}{\partial u_2} = -\frac{r}{I}$
 
-
-#### Linearized Continuous-Time Matrices
-By taking partial derivatives, we obtain the **Jacobian matrices**:
-
-* **A Matrix - System Dynamics (6×6):**
+This gives the continuous Jacobian A:
 
 $$
 A = \begin{bmatrix}
@@ -111,49 +95,8 @@ A = \begin{bmatrix}
 0 & 0 & 0 & 0 & 0 & 0
 \end{bmatrix}
 $$
-* **B Matrix - Control Input (6×2):**
 
-$$
-B = \begin{bmatrix}
-0 & 0 \\
-\frac{-sin(θ)}{m} & \frac{-sin(θ)}{m} \\
-0 & 0 \\
-\frac{cos(θ)}{m} & \frac{cos(θ)}{m} \\
-0 & 0 \\
-\frac{r}{I} & \frac{-r}{I}
-\end{bmatrix}
-$$
-
-* **C Matrix - Measurement (3×6):**
-
-$$
-C = \begin{bmatrix}
-0 & 0 & 1 & 0 & 0 & 0 \\
-0 & 0 & 0 & 0 & 1 & 0 \\
-0 & 0 & 0 & 0 & 0 & 1
-\end{bmatrix}
-$$
-
-* **D Matrix  (3×2):**
-
-$$
-D = \begin{bmatrix}
-0 & 0 \\
-0 & 0 \\
-0 & 0
-\end{bmatrix}
-$$
-
-- $$\mathbf{D} = 0_{m \times n}$$, because control inputs don't directly appear in sensor readings.
-The sensors only measure the drone's actual state, not the commands you're sending
-
-#### Discrete-Time EKF Matrices
-For the discrete EKF update, we use:
-- **State transition Jacobian**: $F = I + A \Delta t$
-- **Measurement Jacobian**: $H = C$ (constant)
-
-### F and H matrices
-
+The discrete-time state transition matrix used in the EKF is:
 $$F = I + A \Delta t$$, where I symbolizes the old state and A symbolizes the change of it.
 
 $$
@@ -167,39 +110,41 @@ F = \begin{bmatrix}
 \end{bmatrix}
 $$
 
-The H matrix is the same as the C matrix, since they tell us what we can measure with our sensors:
+> Note: The input Jacobian `B` is not used in the EKF implementation, as state prediction relies entirely on the nonlinear dynamics.
+
+**Measurement Model**
+
+We directly measure $$y,\theta,\dot{\theta}$$,so the measurement function is:
 
 $$
-H = \begin{bmatrix}
+\mathbf{h(x)} = 
+\begin{bmatrix}
+x_3 \\
+x_5 \\
+x_6
+\end{bmatrix}
+$$
+
+It's Jacobian constant:
+
+$$
+H = C = \begin{bmatrix}
 0 & 0 & 1 & 0 & 0 & 0 \\
 0 & 0 & 0 & 0 & 1 & 0 \\
 0 & 0 & 0 & 0 & 0 & 1
 \end{bmatrix}
 $$
 
+$$
+D = \begin{bmatrix}
+0 & 0 \\
+0 & 0 \\
+0 & 0
+\end{bmatrix}
+$$
 
-### Noise Modeling
-- **Process noise**: $\sigma = 0.004$ (applied to all state derivatives)
-- **Measurement noise**: $\sigma = 0.05$ (on each sensor channel)
-
-The simulation generates three trajectories:
-- `state.clean`: Noise-free Perfect Conditons (nonlinear integration),
-- `state.real`: "Real-world" with added process + sensor noise,
-- `state.estimate`: EKF output (updated at every time step).
-
-### Key Linearization Results
-
-**Partial derivatives:**  
-- $\frac{\partial \ddot{x}}{\partial \theta} = -\frac{\cos\theta}{m}(u_1 + u_2)$
-  
-- $\frac{\partial \ddot{y}}{\partial \theta} = -\frac{\sin\theta}{m}(u_1 + u_2)$
-  
-- $\frac{\partial \ddot{x}}{\partial u_1} = -\frac{\sin\theta}{m}$, $\frac{\partial \ddot{x}}{\partial u_2} = -\frac{\sin\theta}{m}$
-  
-  
-- $\frac{\partial \ddot{y}}{\partial u_1} = \frac{\cos\theta}{m}$, $\frac{\partial \ddot{y}}{\partial u_2} = \frac{\cos\theta}{m}$
-
-- $\frac{\partial \ddot{\theta}}{\partial u_1} = \frac{r}{I}$, $\frac{\partial \ddot{\theta}}{\partial u_2} = -\frac{r}{I}$
+- $$\mathbf{D} = 0_{m \times n}$$, because control inputs don't directly appear in sensor readings.
+The sensors only measure the drone's actual state, not the commands you're sending
 
 ## Extended Kalman Filter Design
 The Extended Kalman Filter (EKF) is used because our quadrotor system is nonlinear—its motion depends on sine and cosine of the angle $$\theta$$, so we can’t use a standard (linear) Kalman filter. Instead, the EKF **linearizes the system at each time step** using the current best estimate, then applies the regular Kalman update equations.
