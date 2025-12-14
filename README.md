@@ -5,8 +5,6 @@ We are using an Extended Kalman Filter (EKF) to estimate the state of a 2D quadr
 
 ![Planar Quadrotor Diagram](Planar_Quadrotor.png)
 
-## Linear State-Space Equations Formulation 
-
 ### The Challenge
 - Sensors are noisy: IMU and altitude sensors provide unreliable, jittery measurements
 - Physics is complex: Real quadrotor dynamics are nonlinear and complicated  
@@ -30,9 +28,32 @@ Where:
 - g: gravitational acceleration
 - u₁, u₂: rotor thrust forces
 
-### System Definitions
+## Problem Definition
 
-### State Vector (6 elements)
+The problem is defined in MATLAB using reasonable values for each variable:
+```matlab
+m = 0.5;         % mass [kg] 
+r = 0.15;        % distance from center to rotors [m]
+I = 0.005;       % moment of inertia [kg*m^2]
+g = 9.81;        % gravity [m/s^2]
+dt = 0.01;       % time step [s] 
+theta = 0;       % angle [rads]
+u1_max = 2.45;       % force max magnitude [N]
+u2_max = 2.45;       % force max magnitude [N]
+```
+
+We use time-varying control inputs:
+
+```matlab
+u1 = u1_max + 0.001*cos(2*time);  
+u2 = u2_max + 0.001*sin(2*time); 
+```
+These inputs create small oscillations around a thrust level slightly above hover, ensuring the quadrotor moves and tilts in a nontrivial way.
+
+## System Definitions
+
+**State Vector (6 elements):**
+
 $$
 \mathbf{x} = 
 \begin{bmatrix}
@@ -45,7 +66,8 @@ y \\
 \end{bmatrix}
 $$
 
-### Input Vector (2 elements) 
+**Input Vector (2 elements):** 
+
 $$
 \mathbf{u} = 
 \begin{bmatrix}
@@ -54,11 +76,9 @@ u_2
 \end{bmatrix}
 $$
 
-### System Linearization for the Extended Kalman Filter
-The Extended Kalman Filter requires a local linear approximation of the nonlinear dynamics to propagate uncertainty (covariance). This is achieved by computing the Jacobian matrices of the system equations with respect to the state and measurement variables.
+## Non-linear perfect conditions simulation
 
-**Nonlinear Process Function**
-The true dynamics are governed by:
+Based on the three initial equations, the true dynamics are governed by:
 
 $$
 \begin{aligned}
@@ -68,7 +88,51 @@ $$
 \end{aligned}
 $$
 
-> In the code, these are used directly (not linearized) to predict the next state. This will is later shown below in more detail.
+Since these equations do not account for any process noise, they correspond to "perfect conditions." The state vector for this clean trajectory is provided as `state.clean` in code.
+
+This ensures the prediction respects the actual dynamics.
+
+```matlab
+  delta_x_clean(1) = state.clean(t - 1, 2)*dt;
+  delta_x_clean(3) = state.clean(t - 1, 4)*dt;
+  delta_x_clean(5) = state.clean(t - 1, 6)*dt;
+  delta_x_clean(6) = (r / I * control_input(t, 1) - r / I * control_input(t, 2)) * dt;
+
+  delta_x_clean(2) = (-sin(theta_clean)*(control_input(t, 1)+control_input(t, 2))/m) * dt;
+  delta_x_clean(4) = (cos(theta_clean)*(control_input(t, 1)+control_input(t, 2))/m - g) * dt;
+```
+
+> **Note on gravity**: The term $$-mg$$ in the vertical force balance accounts for the gravitational pull.
+> This results in a $$-g$$ term in the $$\ddot{y}$$ computation as seen in the code.
+
+After those differences are obtained, the states can be updated
+
+```matlab
+state.clean(t, :) = state.clean(t-1, :) + delta_x_clean(:)';
+output.clean(t, :) = (C * state.clean(t, :)')';
+```
+
+## Real-world trajectory
+
+Real-world trajectory (`state.real`) has only one difference from the perfect conditions trajectory: there is process and measurement noise.
+
+We use Gaussian noise, the amplitude of which was selected based on ... 
+
+```matlab
+state_noise = 0.004 * randn(1,6);
+output_noise = 0.05 * randn(1,3);
+```
+
+All the equations governing the process stay the same, and the noise is added at the state update step:
+
+```matlab
+state.real(t, :) = state.real(t - 1, :) + delta_x_real(:)' + state_noise;
+output.real(t, :) = (C*state.real(t, :)')' + output_noise;
+```
+
+## System Linearization for the Extended Kalman Filter
+
+The Extended Kalman Filter requires a local linear approximation of the nonlinear dynamics to propagate uncertainty (covariance). This is achieved by computing the Jacobian matrices of the system equations with respect to the state and measurement variables.
 
 **Jacobian for Covariance Propagation**
 To update the error covariance, we compute the state transition Jacobian F, derived from the partial derivatives of the dynamics:
@@ -83,7 +147,9 @@ To update the error covariance, we compute the state transition Jacobian F, deri
 
 - $\frac{\partial \ddot{\theta}}{\partial u_1} = \frac{r}{I}$, $\frac{\partial \ddot{\theta}}{\partial u_2} = -\frac{r}{I}$
 
-This gives the continuous Jacobian A:
+The Extended Kalman Filter (EKF) is used because our quadrotor system is nonlinear—its motion depends on sine and cosine of the angle $$\theta$$, so we can’t use a standard (linear) Kalman filter. Instead, the EKF **linearizes the system at each time step** using the current best estimate, then applies the regular Kalman update equations.
+
+This gives the Jacobian A:
 
 $$
 A = \begin{bmatrix}
@@ -97,7 +163,7 @@ A = \begin{bmatrix}
 $$
 
 The discrete-time state transition matrix used in the EKF is:
-$$F = I + A \Delta t$$, where I symbolizes the old state and A symbolizes the change of it.
+$$F = I + A \Delta t$$, where I symbolizes the old state and A symbolizes the change in it.
 
 $$
 F = \begin{bmatrix} 
@@ -110,23 +176,6 @@ F = \begin{bmatrix}
 \end{bmatrix}
 $$
 
-> Note: The input Jacobian `B` is not used in the EKF implementation, as state prediction relies entirely on the nonlinear dynamics.
-
-**Measurement Model**
-
-We directly measure $$y,\theta,\dot{\theta}$$,so the measurement function is:
-
-$$
-\mathbf{h(x)} = 
-\begin{bmatrix}
-x_3 \\
-x_5 \\
-x_6
-\end{bmatrix}
-$$
-
-It's Jacobian constant:
-
 $$
 H = C = \begin{bmatrix}
 0 & 0 & 1 & 0 & 0 & 0 \\
@@ -135,49 +184,21 @@ H = C = \begin{bmatrix}
 \end{bmatrix}
 $$
 
-$$
-D = \begin{bmatrix}
-0 & 0 \\
-0 & 0 \\
-0 & 0
-\end{bmatrix}
-$$
+Our implementation follows the standard **predict–correct cycle**, and everything runs **in real time inside the simulation loop.**
 
-- $$\mathbf{D} = 0_{m \times n}$$, because control inputs don't directly appear in sensor readings.
-The sensors only measure the drone's actual state, not the commands you're sending
-
-## Extended Kalman Filter Design
-The Extended Kalman Filter (EKF) is used because our quadrotor system is nonlinear—its motion depends on sine and cosine of the angle $$\theta$$, so we can’t use a standard (linear) Kalman filter. Instead, the EKF **linearizes the system at each time step** using the current best estimate, then applies the regular Kalman update equations.
-
-Our implementation follows the standard **predict–correct cycle**, and everything runs **in real time inside the simulation loop**.
 ### Prediction Step
-First, we predict the next state using the true nonlinear physics—not a linear approximation. In our code, this is done by computing:
 
-```matlab
-delta_x_estimate(2) = (-sin(theta_estimate)*(control_input(t,1)+control_input(t,2))/m) * dt;
-delta_x_estimate(4) = (cos(theta_estimate)*(control_input(t,1)+control_input(t,2))/m - g) * dt;
-```
+First, we predict the next state using the true nonlinear physics — not a linear approximation. This state is saved as `state.estimate`.
+
 This ensures the prediction respects the actual dynamics.
-> **Note on gravity**: The term $$-mg$$ in the vertical force balance accounts for the gravitational pull.
-> This results in a $$-g$$ term in the $$\ddot{y}$$ computation as seen in the code.
 
-Then, we linearize the system around the current estimate to predict how uncertainty (covariance) evolves. We build the Jacobian `F` matrix like this:
+After the state is obtained for our current timestep. $F$ matrix is updated because it depends on the current angle (`theta_estimate`) and thrust (`control_input`). That's what makes it an *Extended* Kalman Filter.
 
-```matlab
-F = eye(6) + dt * [ ...
-    0 1 0 0 0 0;
-    0 0 0 0 -cos(theta_estimate)*(control_input(t,1)+control_input(t,2))/m 0;
-    0 0 0 1 0 0;
-    0 0 0 0 -sin(theta_estimate)*(control_input(t,1)+control_input(t,2))/m 0;
-    0 0 0 0 0 1;
-    0 0 0 0 0 0];
-```
-This `F` matrix changes every time step because it depends on the current angle (`theta_estimate`) and thrust (`control_input`). That's what makes it an *Extended* Kalman Filter.
 We then predict error covariance:
-```matlab
-P_prediction = F * P * F' + Q;
-```
-Where `Q = eye(6)*1e-5` represents small process noise (we trust the physics model more).
+
+$$P_{\text{prediction}} = F P F^T + Q$$
+
+Where `Q = eye(6)*1e-5` represents the trust in the physics model.
 
 ### Correction step
 Next, we correct the estimate using the latest noisy sensor data (`output.real`)
@@ -186,10 +207,10 @@ We compute the measurement residual—the difference between what the sensor say
 measurement_residual = output.real(t,:)' - C * state.estimate(t,:)';
 ```
 Then, we calculate the Kalman gain, which decides how much to trust the sensor vs. the prediction:
-```matlab
-S = C * P_prediction * C' + R;
-K = P_prediction * C' / S;
-```
+
+$$S = C P_{\text{prediction}} C^T + R$$
+$$K = P_{\text{prediction}} C^T S^{-1}$$
+
 Here,`R = eye(3)*1e-1` is larger than `Q`, meaning we trust the physics more than the sensors-which makes sense, since sensors are noisy.
 
 Finally, we update the state and covariance:
@@ -204,30 +225,8 @@ This gives us a smoother, more accurate estimate than the raw sensor data.
 The code we wrote is divided into three key parts:
 
 ### 1. Main Script (`Planar_Quadrotor.m`)
-This file sets up the simulation environment and runs everything. It starts by defining physical parameters:
-```matlab
-m = 0.5;         % mass [kg] 
-r = 0.15;        % distance from center to rotors [m]
-I = 0.005;       % moment of inertia [kg*m^2]
-g = 9.81;        % gravity [m/s^2]
-dt = 0.01;       % time step [s] 
-theta = 0;       % angle [rads]
-u1 = 2.45;       % force [N]
-u2 = 2.45;       % force [N]
-```
-It defines time-varying control inputs:
-```matlab
-CU1 = 3 + 0.001*cos(2*time);  
-CU2 = 3 + 0.001*sin(2*time); 
-```
-These inputs create small oscillations around a thrust level slightly above hover, ensuring the quadrotor moves and tilts in a nontrivial way.
 
-Noise levels are set based on realistic assumptions:
-```matlab
-noise_data.state_noise_amp = 0.004;   % process noise
-noise_data.output_noise_amp = 0.05;   % sensor noise
-```
-Finally, it calls the core simulation function:
+It defines the system and calls the simulation function:
 ```matlab
 [state, output, errors] = simulation_quadrotor(rotor_data, control_input, noise_data, time, x0);
 ```
@@ -235,17 +234,14 @@ and then generates the final plots:
 ```matlab
 plot_quadrotor_results(time, state, output, rotor_data.C, errors);
 ```
+
 ### 2. Core Simulation (`simulation_quadrotor.m`)
 
 This function runs three parallel simulations in one loop, time step by time step:
 - Clean trajectory (`state.clean`)
-  Uses the true nonlinear dynamics with no noise. This is the Perfect Conditons.
+  Uses the true nonlinear dynamics with no noise. This is the Perfect Conditions.
 - Real-world trajectory (`state.real`)
-  Adds process noise to the state update and measurement noise to the outputs:
-  ```matlab
-  state_noise = 0.004 * randn(1,6);
-  output_noise = 0.05 * randn(1,3);
-  ```
+  Adds process noise to the state update and measurement noise to the outputs.
 - EKF estimate (`state.estimate`)
   Runs the full EKF in real time:
   - Predicts the next state using the same nonlinear physics as the clean simulation.
@@ -253,8 +249,8 @@ This function runs three parallel simulations in one loop, time step by time ste
   - Uses noisy measurements (`output.real`) to correct the estimate.
   - Updates covariance with `Q = 1e-5*I` and `R = 1e-1*I`.
 
- ### 3. Plotting Function (`plot_quadrotor_results.m`)
-Generates two figures showing Perfect Conditons, noisy measurements, and EFK estimates together for all measured states.
+### 3. Plotting Function (`plot_quadrotor_results.m`)
+Generates two figures showing Perfect Conditions, noisy measurements, and EFK estimates together for all measured states.
 
 ## Results & Visualization
 ### Figure 1: Measured States — Perfect Conditions vs Noisy vs EKF
