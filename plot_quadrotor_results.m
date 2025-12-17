@@ -22,7 +22,7 @@ output_filtered = (C * state.estimate')';
 % Ensure column vector
 time = time(:);
 
-%% FIGURE 1: Measured States — Ground Truth, Noisy, EKF
+%% FIGURE 1: Measured States — Perfect Conditions, Noisy, EKF
 figure('Name', 'EKF Performance: Measured States', 'NumberTitle', 'off');
 tiledlayout(3, 1, 'TileSpacing', 'compact', 'Padding', 'compact');
 
@@ -32,7 +32,7 @@ plot(time, output_clean(:,1), 'b-', 'LineWidth', 1.5); hold on;
 plot(time, output.real(:,1), 'r.', 'MarkerSize', 8);
 plot(time, output_filtered(:,1), 'g-', 'LineWidth', 1.5);
 ylabel('y (m)'); grid on;
-legend('Ground Truth', 'Noisy Measurement', 'EKF Estimate', 'Location', 'best');
+legend('Perfect Conditions', 'Noisy Measurement', 'EKF Estimate', 'Location', 'best');
 
 % theta (pitch angle)
 nexttile;
@@ -48,7 +48,7 @@ plot(time, rad2deg(output.real(:,3)), 'r.', 'MarkerSize', 8);
 plot(time, rad2deg(output_filtered(:,3)), 'g-', 'LineWidth', 1.5);
 ylabel('theta-dot (deg/s)'); xlabel('Time (s)'); grid on;
 
-sgtitle('Measured States: Ground Truth vs Noisy vs EKF Estimate');
+sgtitle('Measured States: Perfect Conditions vs Noisy vs EKF Estimate');
 
 %% FIGURE 2: Full State — Clean vs EKF Estimate
 figure('Name', 'EKF Performance: Full State Estimation', 'NumberTitle', 'off');
@@ -75,8 +75,8 @@ for i = 1:6
     end
 end
 
-sgtitle('Full State: Ground Truth vs EKF Estimate');
-legend('Ground Truth', 'EKF Estimate', 'Real State', 'Location', 'southoutside', 'Orientation', 'horizontal');
+sgtitle('Full State: Perfect Conditions vs EKF Estimate');
+legend('Perfect Conditions', 'EKF Estimate', 'Real State', 'Location', 'southoutside', 'Orientation', 'horizontal');
 
 
 end
