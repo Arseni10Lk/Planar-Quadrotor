@@ -99,13 +99,69 @@ noise_data6.state_noise_amp = 0.03; % Process noise amplitude
 noise_data6.output_noise_amp = 0.0; % Measurement noise amplitude.
 
 % Finally we will establish from what value it clearly diverges, we are
-% going to consider that it diverges if for all variables the SRME>1.5
-noise_data7.state_noise_amp =0.473; % Process noise amplitude
-noise_data7.output_noise_amp = 0.972; % Measurement noise amplitude.
-
-%% STEP 7: SIMULATION
+% going to consider that it diverges if for all variables the error >5%
+noise_data7.state_noise_amp =0.003; % Process noise amplitude
+noise_data7.output_noise_amp = 0.02; % Measurement noise amplitude.
 
 x0 = [0;0;1;0;0;0];
+
+
+
+diverged=false;
+
+while ~diverged
+[~, ~, error7] = simulation_quadrotor(rotor_data, control_input, noise_data7, time, x0);
+
+            if error7.rmse_states(1,1) > 5
+                count = count + 1;
+            else
+                count = 0;  % reset if condition breaks
+            end
+   
+
+            if error7.rmse_states(1,2) > 0.2
+                count = count + 1;
+            else
+                count = 0;  % reset if condition breaks
+            end  
+  
+
+            if error7.rmse_states(1,3) > 5
+                count = count + 1;
+            else
+                count = 0;  % reset if condition breaks
+            end
+
+            if error7.rmse_states(1,4) > 0.2
+                count = count + 1;
+            else
+                count = 0;  % reset if condition breaks
+            end
+   
+           
+    if count >= 4
+        diverged = true;
+    else
+        noise_data7.state_noise_amp = noise_data7.state_noise_amp + 0.003; 
+        noise_data7.output_noise_amp = noise_data7.output_noise_amp + 0.02; 
+    end
+    
+    disp(error7.rmse_states)
+end
+
+  
+
+disp('Divergence detected at:');
+disp(noise_data7.state_noise_amp);
+disp(noise_data7.output_noise_amp);
+
+
+
+% STEP 7: SIMULATION
+
+
+
+
 
 state_labels = {'x', 'x-dot', 'y', 'y-dot', 'theta', 'theta-dot'};
 fprintf('\n RMSE Values (State: [x, x-dot, y, y-dot, theta, theta-dot]) \n');
