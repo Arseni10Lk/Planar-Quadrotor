@@ -66,7 +66,7 @@ CU2 = 3 + 0.001*sin(2*time);
 % Combine for lsim
 control_input = [CU1; CU2]';  
 
-%% STEP 6: DEFINE NOISE AMPLITUDE
+%% STEP 6: DEFINE NOISE AMPLITUDE & robustness testing
 
 x0 = [0;0;1;0;0;0];
 [noise_data_all, error_all] = robustness(rotor_data, control_input, time, x0);
