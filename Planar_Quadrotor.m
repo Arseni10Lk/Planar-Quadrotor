@@ -85,7 +85,7 @@ control_input.fall = [CU7; CU8]';
 %% STEP 6: DEFINE NOISE AMPLITUDE & robustness testing
 
 initial_state.x0 = [0;0;1;0;0;0]; % basic case
-initial_state.x1 = [0;3;10;0;-PI/2;0]; % horizontal flight recovery
+initial_state.x1 = [0;3;10;0;-pi/2;0]; % horizontal flight recovery
 initial_state.x2 = [0;0;7;0;0;0]; % roll 
 initial_state.x3 = [0;-0.5;15;-0.25;0.463;0]; % straight fall recovery
 
