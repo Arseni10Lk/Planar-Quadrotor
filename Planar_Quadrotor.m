@@ -60,35 +60,36 @@ time = 0:dt:t_max;
 
 %% STEP 5: DEFINE CONTROL INPUTS
 % Create CU1 and CU2 (time-varying control inputs)
-CU1 = 3 + 0.001*cos(2*time);  
-CU2 = 3 + 0.001*sin(2*time);
+CU1 = 3 * (1 + 0.001*cos(2*time));  
+CU2 = 3 * (1 + 0.001*sin(2*time));
 
 % Create CU3 and CU4 (for horizontal flight recovery)
-CU3 = 2.7 + 0.0009*cos(2*time);
-CU4 = 3 + 0.001*sin(2*time);
+CU3 = 2.7 * (1 + 0.001*cos(2*time));
+CU4 = 3 * (1 + 0.001*sin(2*time));
 
 % Create CU5 and CU6 (for roll)
-CU5 = 1.5 + 0.0005*cos(2*time);
-CU6 = 3 + 0.001*sin(2*time);
+CU5 = 1.5 * (1 + 0.001*cos(2*time));
+CU6 = 3 * (1 + 0.001*sin(2*time));
 
 % Create CU7 and CU8 (for straight fall recovery)
-CU5 = 4 + 0.0013*cos(2*time);
-CU6 = 4 + 0.0013*sin(2*time);
+CU7 = 4 * (1 + 0.001*cos(2*time));
+CU8 = 4 * (1 + 0.001*sin(2*time));
 
 % Combine for lsim
-control_input = [CU1; CU2]';
-control_input_horizontal = [CU3; CU4]';
-control_input_roll = [CU5; CU6]';
-control_input_recovery = [CU7; CU8]';
+control_input.basic = [CU1; CU2]';
+control_input.horizontal = [CU3; CU4]';
+control_input.roll = [CU5; CU6]';
+control_input.fall = [CU7; CU8]';
+
 
 %% STEP 6: DEFINE NOISE AMPLITUDE & robustness testing
 
-x0 = [0;0;1;0;0;0]; % basic case
-x1 = [0;3;10;0;-PI/2;0]; % horizontal flight recovery
-x2 = [0;0;7;0;0;0]; % roll 
-x3 = [0;-0.5;15;-0.25;0.463;0]; % straight fall recovery
+initial_state.x0 = [0;0;1;0;0;0]; % basic case
+initial_state.x1 = [0;3;10;0;-PI/2;0]; % horizontal flight recovery
+initial_state.x2 = [0;0;7;0;0;0]; % roll 
+initial_state.x3 = [0;-0.5;15;-0.25;0.463;0]; % straight fall recovery
 
-[noise_data_all, error_all] = robustness(rotor_data, control_input, time, x0);
+[noise_data_all, error_all] = robustness(rotor_data, control_input.basic, time, initial_state.x0);
 
 
 
