@@ -1,34 +1,48 @@
 function [noise_data_all, error_all] = robustness(rotor_data, control_input, time, x0)
 
-    % Case 1: Times 0.5
+    fprintf('\n RMSE Values (State: [x, x-dot, y, y-dot, theta, theta-dot]) \n');
+
+    % Case 1: Times 0.5 Optimal conditions
     noise_data1.state_noise_amp = 0.0015;
     noise_data1.output_noise_amp = 0.01;
     [~, ~, error1] = simulation_quadrotor(rotor_data, control_input, noise_data1, time, x0);
+    fprintf('Case 1 : ');
+    disp(error1.rmse_states);
 
-    % Case 2: Times 1
+    % Case 2: Times 1 Regular conditions
     noise_data2.state_noise_amp = 0.003;
     noise_data2.output_noise_amp = 0.02;
     [~, ~, error2] = simulation_quadrotor(rotor_data, control_input, noise_data2, time, x0);
+    fprintf('Case 2 : ');
+    disp(error2.rmse_states);
 
-    % Case 3: Times 5
+    % Case 3: Times 5 Inconvenient conditions
     noise_data3.state_noise_amp = 0.015;
     noise_data3.output_noise_amp = 0.1;
     [~, ~, error3] = simulation_quadrotor(rotor_data, control_input, noise_data3, time, x0);
+    fprintf('Case 3 : ');
+    disp(error3.rmse_states);
 
-    % Case 4: Times 10
+    % Case 4: Times 10 Very inconvenient conditions
     noise_data4.state_noise_amp = 0.03;
     noise_data4.output_noise_amp = 0.2;
     [~, ~, error4] = simulation_quadrotor(rotor_data, control_input, noise_data4, time, x0);
+    fprintf('Case 4 : ');
+    disp(error4.rmse_states);
 
     % Case 5: No process / high measurement
     noise_data5.state_noise_amp = 0.00;
     noise_data5.output_noise_amp = 0.2;
     [~, ~, error5] = simulation_quadrotor(rotor_data, control_input, noise_data5, time, x0);
+    fprintf('Case 5 : ');
+    disp(error5.rmse_states);
 
     % Case 6: High process / no measurement
     noise_data6.state_noise_amp = 0.03;
     noise_data6.output_noise_amp = 0.0;
     [~, ~, error6] = simulation_quadrotor(rotor_data, control_input, noise_data6, time, x0);
+    fprintf('Case 6 : ');
+    disp(error6.rmse_states);
 
     % Case 7: Divergence detection
     noise_data7.state_noise_amp = 0.003;

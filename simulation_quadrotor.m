@@ -128,7 +128,8 @@ for t = 2:length(time)
     
     % 1. Calculate Measurement Residual 
     measurement_residual = output.real(t, :)' - C * state.estimate(t, :)';
-    
+    measurement_residual(2) = mod(measurement_residual(2) + pi, 2*pi) - pi;
+
     % 2. Calculate Kalman Gain
     S = C * P_prediction * C' + R;
     K = P_prediction * C' / S;
