@@ -51,7 +51,7 @@ C = [0  0  1  0  0  0;
      0  0  0  0  0  1];
 
 rotor_data.C = C; % It says what we measure, so let's say it is rotor data 
-% (like what the sensors are)
+% (like what the sensors are)gitgit
 
 D = zeros(3,2);  
 
