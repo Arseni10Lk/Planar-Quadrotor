@@ -1,9 +1,6 @@
 function plot_quadrotor_enhanced(time, state_data, output_data, C, errors)
-% PLOT_QUADROTOR_ENHANCED - Complete visualization for planar quadrotor
-% ONE window showing: 2D trajectory + all 6 states
-% Satisfies ALL Task 1 requirements
 
-% Force light theme for consistent display
+% Forced light theme for consistent display
 set(0, 'DefaultFigureColor', 'white');
 
 % Get screen size for optimal window placement
@@ -26,7 +23,7 @@ axis(ax_traj, 'equal');
 
 N = length(time);
 
-% 1. Ideal trajectory (subtle gray line)
+% 1. Ideal trajectory ( gray line)
 plot(ax_traj, state_data.clean(:,1), state_data.clean(:,3), ':', ...
     'Color', [0.7 0.7 0.7], 'LineWidth', 1, 'DisplayName', 'Ideal');
 
