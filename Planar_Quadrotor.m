@@ -51,7 +51,7 @@ C = [0  0  1  0  0  0;
      0  0  0  0  0  1];
 
 rotor_data.C = C; % It says what we measure, so let's say it is rotor data 
-% (like what the sensors are)gitgit
+% (like what the sensors are)
 
 D = zeros(3,2);  
 
@@ -129,8 +129,8 @@ noise_data.output_noise_amp = 0.02;
 
 plot_quadrotor_enhanced(time, states, output, C, error);
 
-visualize_quadrotor_suite(time, states, output, C, error);
+%%merry_christmas_quadrotor();
 
-plot_robustness_results(rotor_data, control_input, time, initial_state);
+[rmse_mat, noise_mat, div_data] = robustness(rotor_data, control_input.roll, time, initial_state.roll);
 
-merry_christmas_quadrotor();
+plot_robustness_results(rmse_mat, noise_mat, div_data);

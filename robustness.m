@@ -1,110 +1,75 @@
-function [noise_data_all, error_all] = robustness(rotor_data, control_input, time, x0)
+function [rmse_matrix, noise_matrix, divergence_data] = robustness(rotor_data, control_input, time, initial_state)
+% ROBUSTNESS - Run robustness tests and return data for plotting
+% Returns: rmse_matrix (4x6), noise_matrix (4x2), divergence_data
 
-    fprintf('\n RMSE Values (State: [x, x-dot, y, y-dot, theta, theta-dot]) \n');
+fprintf('\n=== Running Robustness Analysis ===\n');
 
-    % Case 1: Times 0.5 Optimal conditions
-    noise_data1.state_noise_amp = 0.0015;
-    noise_data1.output_noise_amp = 0.01;
-    [~, ~, error1] = simulation_quadrotor(rotor_data, control_input, noise_data1, time, x0);
-    fprintf('Case 1 : ');
-    disp(error1.rmse_states);
+% Define 4 noise cases (Cases 1-4)
+noise_cases = [
+    0.0015, 0.01;  % Case 1: Optimal
+    0.003,  0.02;  % Case 2: Regular
+    0.015,  0.1;   % Case 3: High noise
+    0.03,   0.2    % Case 4: Very high noise
+];
 
-    % Case 2: Times 1 Regular conditions
-    noise_data2.state_noise_amp = 0.003;
-    noise_data2.output_noise_amp = 0.02;
-    [~, ~, error2] = simulation_quadrotor(rotor_data, control_input, noise_data2, time, x0);
-    fprintf('Case 2 : ');
-    disp(error2.rmse_states);
+num_cases = size(noise_cases, 1);
+rmse_matrix = zeros(num_cases, 6);
+noise_matrix = noise_cases;
 
-    % Case 3: Times 5 Inconvenient conditions
-    noise_data3.state_noise_amp = 0.015;
-    noise_data3.output_noise_amp = 0.1;
-    [~, ~, error3] = simulation_quadrotor(rotor_data, control_input, noise_data3, time, x0);
-    fprintf('Case 3 : ');
-    disp(error3.rmse_states);
+% Run simulations for Cases 1–4
+for case_num = 1:num_cases
+    noise_data.state_noise_amp = noise_cases(case_num, 1);
+    noise_data.output_noise_amp = noise_cases(case_num, 2);
+    
+    [~, ~, errors] = simulation_quadrotor(rotor_data, control_input, noise_data, time, initial_state);
+    rmse_matrix(case_num, :) = errors.rmse_states;
+    
+    fprintf('Case %d RMSE: ', case_num);
+    fprintf('%.4f ', errors.rmse_states);
+    fprintf('\n');
+end
 
-    % Case 4: Times 10 Very inconvenient conditions
-    noise_data4.state_noise_amp = 0.03;
-    noise_data4.output_noise_amp = 0.2;
-    [~, ~, error4] = simulation_quadrotor(rotor_data, control_input, noise_data4, time, x0);
-    fprintf('Case 4 : ');
-    disp(error4.rmse_states);
+% Run divergence analysis (Case 7)
+divergence_data = find_divergence(rotor_data, control_input, time, initial_state);
 
-    % Case 5: No process / high measurement
-    noise_data5.state_noise_amp = 0.00;
-    noise_data5.output_noise_amp = 0.2;
-    [~, ~, error5] = simulation_quadrotor(rotor_data, control_input, noise_data5, time, x0);
-    fprintf('Case 5 : ');
-    disp(error5.rmse_states);
+fprintf('\n=== Analysis Complete ===\n');
+end
 
-    % Case 6: High process / no measurement
-    noise_data6.state_noise_amp = 0.03;
-    noise_data6.output_noise_amp = 0.0;
-    [~, ~, error6] = simulation_quadrotor(rotor_data, control_input, noise_data6, time, x0);
-    fprintf('Case 6 : ');
-    disp(error6.rmse_states);
-
-    % Case 7: Divergence detection
-    noise_data7.state_noise_amp = 0.003;
-    noise_data7.output_noise_amp = 0.02;
-
-    diverged = false;
-    count = 0;
-
-    while ~diverged
-        [~, ~, error7] = simulation_quadrotor(rotor_data, control_input, noise_data7, time, x0);
-
-        if error7.rmse_states(1,1) > 5
-            count = count + 1;
-        else
-            count = 0;
+% --- Local helper function ---
+function div_data = find_divergence(rotor_data, control_input, time, initial_state)
+    base_noise = [0.003, 0.02];  % Base noise levels
+    max_multiplier = 50;
+    multiplier = 1;
+    
+    div_data.multipliers = [];
+    div_data.rmse_values = [];
+    div_data.diverged = false;
+    
+    while multiplier <= max_multiplier
+        noise_data.state_noise_amp = base_noise(1) * multiplier;
+        noise_data.output_noise_amp = base_noise(2) * multiplier;
+        
+        [~, ~, errors] = simulation_quadrotor(rotor_data, control_input, noise_data, time, initial_state);
+        
+        div_data.multipliers(end+1) = multiplier;
+        div_data.rmse_values(end+1, :) = errors.rmse_states;
+        
+        % Divergence criteria
+        if errors.rmse_states(1) > 5 || errors.rmse_states(3) > 5 || ...
+           errors.rmse_states(2) > 0.2 || errors.rmse_states(4) > 0.2
+            div_data.diverged = true;
+            div_data.divergence_point = multiplier;
+            div_data.divergence_noise = [noise_data.state_noise_amp, noise_data.output_noise_amp];
+            fprintf('Divergence at %dx noise multiplier\n', multiplier);
+            break;
         end
-
-        if error7.rmse_states(1,2) > 0.2
-            count = count + 1;
-        else
-            count = 0;
-        end
-
-        if error7.rmse_states(1,3) > 5
-            count = count + 1;
-        else
-            count = 0;
-        end
-
-        if error7.rmse_states(1,4) > 0.2
-            count = count + 1;
-        else
-            count = 0;
-        end
-
-        if count >= 4
-            diverged = true;
-        else
-            noise_data7.state_noise_amp = noise_data7.state_noise_amp + 0.003;
-            noise_data7.output_noise_amp = noise_data7.output_noise_amp + 0.02;
-        end
+        
+        multiplier = multiplier + 1;
     end
-
-    disp('Divergence detected at:');
-    disp(noise_data7.state_noise_amp);
-    disp(noise_data7.output_noise_amp);
-
-
-    % Collect all results
-    noise_data_all = struct( 'noise_data1', noise_data1, ...
-                              'noise_data2', noise_data2, ...
-                              'noise_data3', noise_data3, ...
-                              'noise_data4', noise_data4, ...
-                              'noise_data5', noise_data5, ...
-                              'noise_data6', noise_data6, ...
-                              'noise_data7', noise_data7 );
-
-    error_all = struct( 'error1', error1, ...
-                        'error2', error2, ...
-                        'error3', error3, ...
-                        'error4', error4, ...
-                        'error5', error5, ...
-                        'error6', error6, ...
-                        'error7', error7 );
+    
+    if ~div_data.diverged
+        div_data.divergence_point = max_multiplier;
+        div_data.divergence_noise = base_noise * max_multiplier;
+        fprintf('No divergence up to %dx noise\n', max_multiplier);
+    end
 end

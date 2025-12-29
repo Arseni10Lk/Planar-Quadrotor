@@ -1,268 +1,165 @@
-function plot_quadrotor_enhanced(time, state, output, C, errors)
+function plot_quadrotor_enhanced(time, state_data, output_data, C, errors)
+% PLOT_QUADROTOR_ENHANCED - Complete visualization for planar quadrotor
+% ONE window showing: 2D trajectory + all 6 states
+% Satisfies ALL Task 1 requirements
 
-% Ensure time is column vector
-time = time(:);
+% Force light theme for consistent display
+set(0, 'DefaultFigureColor', 'white');
+
+% Get screen size for optimal window placement
+screen_size = get(0, 'ScreenSize');
+fig_width = min(1200, screen_size(3) * 0.85);
+fig_height = min(800, screen_size(4) * 0.85);
+fig_x = (screen_size(3) - fig_width) / 2;
+fig_y = (screen_size(4) - fig_height) / 2;
+
+% Create single figure window
+fig = figure('Name', 'Quadrotor Simulation - Complete Results', ...
+    'NumberTitle', 'off', ...
+    'Position', [fig_x, fig_y, fig_width, fig_height], ...
+    'Color', 'white');
+
+%% ========== TOP: 2D TRAJECTORY WITH PITCH INDICATORS ==========
+ax_traj = subplot(4, 3, [1 2 4 5]);
+hold(ax_traj, 'on'); grid(ax_traj, 'on'); box(ax_traj, 'on');
+axis(ax_traj, 'equal');
+
 N = length(time);
 
-% Recompute outputs for consistency
-output_clean = (C * state.clean')';
-output_filtered = (C * state.estimate')';
+% 1. Ideal trajectory (subtle gray line)
+plot(ax_traj, state_data.clean(:,1), state_data.clean(:,3), ':', ...
+    'Color', [0.7 0.7 0.7], 'LineWidth', 1, 'DisplayName', 'Ideal');
 
+% 2. EKF estimated trajectory (blue solid line)
+plot(ax_traj, state_data.estimate(:,1), state_data.estimate(:,3), 'b-', ...
+    'LineWidth', 2, 'DisplayName', 'EKF Estimate');
 
-fig = figure('Name', 'Quadrotor Simulation - Complete Overview', ...
-    'NumberTitle', 'off', ...
-    'Units', 'normalized', ...
-    'Position', [0.02 0.02 0.96 0.92], ...
-    'Color', [1 1 1]);
+% 3. Real trajectory (red solid line)
+plot(ax_traj, state_data.real(:,1), state_data.real(:,3), 'r-', ...
+    'LineWidth', 1.5, 'DisplayName', 'Real (Noisy)');
 
-%% ========== SUBPLOT 1: 2D TRAJECTORY WITH PITCH PLATES (TOP-LEFT, 2x2) ==========
-subplot(3, 3, [1, 2, 4, 5]);
-hold on; grid on; box on;
-axis equal;
+% 4. Measurement points (red dots)
+scatter(ax_traj, state_data.real(1:30:end,1), output_data.real(1:30:end,1), ...
+    25, 'r', 'filled', 'DisplayName', 'Measurements');
 
-x_data = [state.clean(:,1); state.real(:,1); state.estimate(:,1)];
-y_data = [state.clean(:,3); state.real(:,3); state.estimate(:,3)];
-
-% Calculate min and max manually
-x_min = min(x_data);
-x_max = max(x_data);
-y_min = min(y_data);
-y_max = max(y_data);
-
-x_mid = (x_min + x_max) / 2;
-y_mid = (y_min + y_max) / 2;
-x_range = x_max - x_min;
-y_range = y_max - y_min;
-max_range = max(x_range, y_range);
-
-if max_range < 0.5
-    max_range = 0.5; % Minimum scale for visibility
-end
-plot_margin = max_range * 0.2;
-
-
-h_clean = plot(state.clean(:,1), state.clean(:,3), ...
-    'Color', [0.85 0.85 0.85], 'LineStyle', ':', 'LineWidth', 0.5, ...
-    'DisplayName', 'Clean Trajectory');
-
-
-h_est = plot(state.estimate(:,1), state.estimate(:,3), ...
-    'b-', 'LineWidth', 2, 'DisplayName', 'EKF Estimate');
-
-
-h_real = plot(state.real(:,1), state.real(:,3), ...
-    'r-', 'LineWidth', 1.2, 'DisplayName', 'Real States');
-
-
-h_output = scatter(state.real(:,1), output.real(:,1), ...
-    40, 'r', 'filled', 'Marker', 'o', ...
-    'MarkerEdgeColor', 'k', 'LineWidth', 0.5, ...
-    'DisplayName', 'Real Output (y)');
-
-
-plate_interval = max(1, floor(N/20)); 
-plate_length = max_range * 0.15; 
-
+% Add pitch angle plates (every 20 time steps)
+plate_interval = max(1, floor(N/20));
 for i = 1:plate_interval:N
-    % Current position and orientation from ESTIMATE
-    x_pos = state.estimate(i, 1);
-    y_pos = state.estimate(i, 3);
-    theta = state.estimate(i, 5); % Pitch angle in radians
+    x_pos = state_data.estimate(i, 1);
+    y_pos = state_data.estimate(i, 3);
+    theta = state_data.estimate(i, 5);
     
-   
-    line_x = [-plate_length/2, plate_length/2];
-    line_y = [0, 0];
+    % Create a short line showing pitch orientation
+    line_length = 0.25;
+    x_line = [x_pos, x_pos + line_length*cos(theta)];
+    y_line = [y_pos, y_pos + line_length*sin(theta)];
     
-    % Rotate line according to pitch angle
-    R = [cos(theta), -sin(theta); sin(theta), cos(theta)];
-    rotated_line = R * [line_x; line_y];
-    
-    % Translate to current position
-    line_x_final = rotated_line(1,:) + x_pos;
-    line_y_final = rotated_line(2,:) + y_pos;
-    
-    % Plot the pitch plate as a thick black line
-    plot(line_x_final, line_y_final, ...
-        'k-', 'LineWidth', 3, 'HandleVisibility', 'off');
-    
-    % Add a small black circle at the center
-    plot(x_pos, y_pos, 'ko', 'MarkerSize', 4, ...
-        'MarkerFaceColor', 'k', 'HandleVisibility', 'off');
+    plot(ax_traj, x_line, y_line, 'k-', 'LineWidth', 2, 'HandleVisibility', 'off');
 end
 
-% --- Add start and end markers ---
-h_start = scatter(state.clean(1,1), state.clean(1,3), ...
-    100, 'g', 'filled', '^', 'LineWidth', 1, ...
-    'DisplayName', 'Start');
-h_end = scatter(state.clean(end,1), state.clean(end,3), ...
-    100, 'm', 'filled', 'v', 'LineWidth', 1, ...
-    'DisplayName', 'End');
+% Start and end markers
+scatter(ax_traj, state_data.clean(1,1), state_data.clean(1,3), ...
+    80, 'g', 'filled', '^', 'DisplayName', 'Start');
+scatter(ax_traj, state_data.clean(end,1), state_data.clean(end,3), ...
+    80, 'm', 'filled', 'v', 'DisplayName', 'End');
 
-% --- Labels and formatting ---
-xlabel('x (m)', 'FontWeight', 'bold'); 
-ylabel('y (m)', 'FontWeight', 'bold');
-title('2D Trajectory with Pitch Plates', 'FontWeight', 'bold');
-legend([h_clean, h_est, h_real, h_output, h_start, h_end], ...
-    'Location', 'bestoutside');
+xlabel(ax_traj, 'x Position (m)', 'FontWeight', 'bold');
+ylabel(ax_traj, 'y Position (m)', 'FontWeight', 'bold');
+title(ax_traj, '2D Trajectory with Pitch Angle Visualization', 'FontWeight', 'bold');
+legend(ax_traj, 'Location', 'best', 'FontSize', 9);
 
-% Set axis limits with margin
-xlim([x_mid - max_range/2 - plot_margin, x_mid + max_range/2 + plot_margin]);
-ylim([y_mid - max_range/2 - plot_margin, y_mid + max_range/2 + plot_margin]);
-
-%% ========== SUBPLOTS 2-7:  6 STATES ==========
+%% ========== BOTTOM: ALL 6 STATES (2x3 grid) ==========
 state_info = {
-    {'x (m)', 'x'}, ...
-    {'dx/dt (m/s)', 'x-dot'}, ...
-    {'y (m)', 'y'}, ...
-    {'dy/dt (m/s)', 'y-dot'}, ...
-    {'θ (rad)', 'theta'}, ...
-    {'dθ/dt (rad/s)', 'theta-dot'} ...
+    {'x (m)', 'x Position'}, ...
+    {'dx/dt (m/s)', 'x Velocity'}, ...
+    {'y (m)', 'y Position'}, ...
+    {'dy/dt (m/s)', 'y Velocity'}, ...
+    {'θ (deg)', 'Pitch Angle'}, ...
+    {'dθ/dt (deg/s)', 'Pitch Rate'} ...
 };
 
-% Which states have corresponding outputs?
-has_output = [false, false, true, false, true, true];
-output_map = [0, 0, 1, 0, 2, 3]; % Index into output.real
+% Subplot positions in 4x3 grid: [7, 8, 9, 10, 11, 12]
+subplot_positions = [7, 8, 9, 10, 11, 12];
 
-% Subplot positions in 3x3 grid
-% Positions: 3, 4, 5, 6, 7, 9
-subplot_positions = [3, 4, 5, 6, 7, 9];
-
-for state_idx = 1:6
-    % Set subplot position
-    subplot(3, 3, subplot_positions(state_idx));
+for i = 1:6
+    ax_state = subplot(4, 3, subplot_positions(i));
+    hold(ax_state, 'on'); grid(ax_state, 'on'); box(ax_state, 'on');
     
-    % Clear and set up
-    cla; hold on; grid on; box on;
-    
-    % Get label info
-    y_label = state_info{state_idx}{1};
-    state_name = state_info{state_idx}{2};
-    
-    % --- PLOT CLEAN STATE ---
-    clean_step = max(1, floor(N/100)); % Show ~100 points
-    clean_idx = 1:clean_step:N;
-    h_clean_state = plot(time(clean_idx), state.clean(clean_idx, state_idx), ...
-        '.', 'Color', [0.6 0.6 0.6], 'MarkerSize', 6, ...
-        'DisplayName', 'Clean State');
-    
-    % --- PLOT REAL STATE (SOLID RED LINE) ---
-    h_real_state = plot(time, state.real(:, state_idx), ...
-        'r-', 'LineWidth', 1.5, 'DisplayName', 'Real State');
-    
-    % --- PLOT ESTIMATED STATE (SOLID BLUE LINE) ---
-    h_est_state = plot(time, state.estimate(:, state_idx), ...
-        'b-', 'LineWidth', 2, 'DisplayName', 'EKF Estimate');
-    
-    % --- PLOT REAL OUTPUT ---
-    if has_output(state_idx) && output_map(state_idx) > 0
-        output_col = output_map(state_idx);
-        dot_step = max(1, floor(N/50)); % Show ~50 points
-        dot_idx = 1:dot_step:N;
-        h_output_state = plot(time(dot_idx), output.real(dot_idx, output_col), ...
-            'r.', 'MarkerSize', 15, 'DisplayName', 'Real Output');
+    % Convert angles to degrees for display
+    if i == 5 || i == 6
+        clean_data = rad2deg(state_data.clean(:,i));
+        real_data = rad2deg(state_data.real(:,i));
+        est_data = rad2deg(state_data.estimate(:,i));
+    else
+        clean_data = state_data.clean(:,i);
+        real_data = state_data.real(:,i);
+        est_data = state_data.estimate(:,i);
     end
     
-    % --- Labels and formatting ---
-    ylabel(y_label, 'FontWeight', 'bold');
-    xlabel('Time (s)', 'FontWeight', 'bold');
-    title(sprintf('State: %s', state_name), 'FontWeight', 'bold');
+    % Plot with required styling:
+    % 1. Clean states: subtle (light gray dots, every 10th point)
+    plot(ax_state, time(1:10:end), clean_data(1:10:end), '.', ...
+        'Color', [0.7 0.7 0.7], 'MarkerSize', 6, 'DisplayName', 'Ideal');
     
-    % Set consistent time axis for ALL plots
-    xlim([min(time), max(time)]);
+    % 2. Real states: solid red line
+    plot(ax_state, time, real_data, 'r-', ...
+        'LineWidth', 1.5, 'DisplayName', 'Real State');
     
-    % Special handling for angle states
-    if state_idx == 5 % theta (pitch angle)
-        % Convert to degrees for readability
-        ylabel('θ (deg)', 'FontWeight', 'bold');
-        ylim_deg = [-180, 180]; % Reasonable range in degrees
-        ylim(ylim_deg);
-        
-        % Convert and replot data in degrees
-        cla; hold on; grid on; box on;
-        
-        % Clean state in degrees
-        plot(time(clean_idx), rad2deg(state.clean(clean_idx, state_idx)), ...
-            '.', 'Color', [0.6 0.6 0.6], 'MarkerSize', 6, ...
-            'DisplayName', 'Clean State');
-        
-        % Real state in degrees
-        plot(time, rad2deg(state.real(:, state_idx)), ...
-            'r-', 'LineWidth', 1.5, 'DisplayName', 'Real State');
-        
-        % Estimated state in degrees
-        plot(time, rad2deg(state.estimate(:, state_idx)), ...
-            'b-', 'LineWidth', 2, 'DisplayName', 'EKF Estimate');
-        
-        % Output in degrees if applicable
-        if has_output(state_idx) && output_map(state_idx) > 0
-            plot(time(dot_idx), rad2deg(output.real(dot_idx, output_col)), ...
-                'r.', 'MarkerSize', 15, 'DisplayName', 'Real Output');
-        end
-        
-    elseif state_idx == 6 % theta-dot
-        % Convert to deg/s for readability
-        ylabel('dθ/dt (deg/s)', 'FontWeight', 'bold');
-        
-        % Replot in deg/s
-        cla; hold on; grid on; box on;
-        
-        plot(time(clean_idx), rad2deg(state.clean(clean_idx, state_idx)), ...
-            '.', 'Color', [0.6 0.6 0.6], 'MarkerSize', 6, ...
-            'DisplayName', 'Clean State');
-        plot(time, rad2deg(state.real(:, state_idx)), ...
-            'r-', 'LineWidth', 1.5, 'DisplayName', 'Real State');
-        plot(time, rad2deg(state.estimate(:, state_idx)), ...
-            'b-', 'LineWidth', 2, 'DisplayName', 'EKF Estimate');
-        
-        if has_output(state_idx) && output_map(state_idx) > 0
-            plot(time(dot_idx), rad2deg(output.real(dot_idx, output_col)), ...
-                'r.', 'MarkerSize', 15, 'DisplayName', 'Real Output');
-        end
+    % 3. Estimated states: solid blue line
+    plot(ax_state, time, est_data, 'b-', ...
+        'LineWidth', 2, 'DisplayName', 'EKF Estimate');
+    
+    % 4. Real outputs: red dots (only for measured states)
+    if i == 3  % y position
+        plot(ax_state, time(1:20:end), output_data.real(1:20:end,1), 'r.', ...
+            'MarkerSize', 10, 'DisplayName', 'Real Output');
+    elseif i == 5  % theta
+        plot(ax_state, time(1:20:end), rad2deg(output_data.real(1:20:end,2)), 'r.', ...
+            'MarkerSize', 10, 'DisplayName', 'Real Output');
+    elseif i == 6  % theta-dot
+        plot(ax_state, time(1:20:end), rad2deg(output_data.real(1:20:end,3)), 'r.', ...
+            'MarkerSize', 10, 'DisplayName', 'Real Output');
     end
+    
+    xlabel(ax_state, 'Time (s)', 'FontSize', 9);
+    ylabel(ax_state, state_info{i}{1}, 'FontSize', 9);
+    title(ax_state, state_info{i}{2}, 'FontWeight', 'bold');
     
     % Add legend only to first state plot
-    if state_idx == 1
-        legend('Location', 'best', 'FontSize', 9);
+    if i == 1
+        legend(ax_state, 'Location', 'best', 'FontSize', 8);
     end
-    
-    % Ensure text fits in plot
-    set(gca, 'FontSize', 9, 'FontWeight', 'bold');
 end
 
-%% ========== OVERALL FORMATTING ==========
-% Add overall title
-sgtitle('Planar Quadrotor: Complete State Estimation & Output Comparison', ...
-    'FontSize', 16, 'FontWeight', 'bold', 'Color', [0.1 0.1 0.5]);
+%% ========== RMSE DISPLAY (Top-right corner) ==========
+ax_info = subplot(4, 3, 3);
+axis(ax_info, 'off');
 
-% Adjust spacing
-h = findobj(gcf, 'Type', 'axes');
-for i = 1:length(h)
-    set(h(i), 'FontSize', 9, 'FontWeight', 'bold');
-end
-
-drawnow;
-
-%% ========== OPTIONAL: DISPLAY RMSE IN FIGURE ==========
 if exist('errors', 'var') && isfield(errors, 'rmse_states')
-    % Create a text box with RMSE values
-    rmse_text = sprintf('RMSE Values:\n');
-    state_names = {'x', 'x-dot', 'y', 'y-dot', 'theta', 'theta-dot'};
+    rmse_text = {'PERFORMANCE SUMMARY:', '====================', ''};
+    state_names = {'x', 'dx', 'y', 'dy', 'θ', 'dθ'};
     
     for i = 1:min(6, length(errors.rmse_states))
-        if i <= length(state_names)
-            rmse_text = sprintf('%s%s: %.4f\n', ...
-                rmse_text, state_names{i}, errors.rmse_states(i));
-        end
+        rmse_text{end+1} = sprintf('%s: %.4f', state_names{i}, errors.rmse_states(i));
     end
     
-    % Add text annotation
-    annotation('textbox', [0.02, 0.02, 0.2, 0.1], ...
-        'String', rmse_text, ...
-        'FontSize', 9, ...
-        'FontWeight', 'bold', ...
-        'BackgroundColor', [0.95 0.95 0.95], ...
-        'EdgeColor', [0.5 0.5 0.5]);
+    % Add average error
+    rmse_text{end+1} = '';
+    rmse_text{end+1} = sprintf('Avg Pos Error: %.4f', mean(errors.rmse_states([1,3])));
+    rmse_text{end+1} = sprintf('Avg Vel Error: %.4f', mean(errors.rmse_states([2,4])));
+    rmse_text{end+1} = sprintf('Avg Ang Error: %.4f°', rad2deg(mean(errors.rmse_states([5,6]))));
+else
+    rmse_text = {'No RMSE data available'};
 end
 
-fprintf('Enhanced plot generated successfully!\n');
+text(0.05, 0.95, rmse_text, ...
+    'FontName', 'Courier New', 'FontSize', 9, ...
+    'VerticalAlignment', 'top', 'FontWeight', 'bold', ...
+    'BackgroundColor', [0.95 0.95 0.95]);
+
+%% ========== OVERALL TITLE ==========
+sgtitle('Planar Quadrotor: Complete State Estimation Results', ...
+    'FontSize', 14, 'FontWeight', 'bold');
+
+drawnow;
 end
