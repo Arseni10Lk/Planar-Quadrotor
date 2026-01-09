@@ -60,7 +60,7 @@ function div_data = find_divergence_individual_states(rotor_data, control_input,
     
     % ============ CRITICAL: SET DIVERGENCE THRESHOLDS HERE ============
     % Adjust these values to match system's expected performance
-    thresholds = [5.0, 0.2, 5.0, 0.2, 0.5, 0.3];  % x,y,dx,dy,theta,dtheta
+    thresholds = [5.0, 1.0, 0.5, 0.2, 0.5, 0.3];  
    
     % ==================================================================
     
