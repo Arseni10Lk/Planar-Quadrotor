@@ -134,3 +134,6 @@ plot_quadrotor_enhanced(time, states, output, C, error);
 [rmse_mat, noise_mat, div_data] = robustness(rotor_data, control_input.roll, time, initial_state.roll);
 
 plot_robustness_results(rmse_mat, noise_mat, div_data);
+
+%%plot_quadrotor_3D(time, states, output, C, error);
+%%plot_quadrotor_3D_physical(time, states, output, C, error);
