@@ -40,7 +40,7 @@ plot(ax_traj, state_data.real(:,1), state_data.real(:,3), 'r-', ...
      'LineWidth', 1.5, 'DisplayName', 'Real Trajectory (Noisy)');
 
 % === ADD CLEAN ORIENTATION BARS (NO CLUTTER) ===
-num_bars = 5;
+num_bars = 10;
 bar_indices = round(linspace(1, N, num_bars));
 
 % Scale parameters
