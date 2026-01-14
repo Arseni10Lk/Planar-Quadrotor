@@ -19,10 +19,12 @@ end
 output.clean = zeros(length(time), size(C, 1));
 output.real = zeros(length(time), size(C, 1));
 output.filtered = zeros(length(time), size(C, 1));
+output.running = zeros(length(time), size(C, 1));%RUNNING
 
 state.clean = zeros(length(time), size(A, 1));
 state.real = zeros(length(time), size(A, 1));
 state.estimate = zeros(length(time), size(A, 1));
+state.running = zeros(length(time), size(A, 1));%RUNNING
 
 % Simulate the system dynamics over the specified time
 
@@ -30,10 +32,12 @@ state.estimate = zeros(length(time), size(A, 1));
 state.clean(1, :) = x0; 
 state.real(1, :) = x0; 
 state.estimate(1, :) = x0;
+state.running(1, :) = x0;%RUNNING
 
 output.clean(1, :) = C*state.clean(1, :)';
 output.real(1, :) = output.clean(1, :);
 output.filtered(1, :) = output.clean(1, :);
+output.running(1, :) = output.clean(1, :);%RUNNING
 
 % Filter data
 
@@ -44,6 +48,9 @@ Q = eye(6) * 1e-5;
 % R: Measurement Noise Covariance (Trust in Sensors)
 % We set this higher than actual noise to filter out the jitters
 R = eye(3) * 1e-1;
+
+% Running 
+window_size = 10; % You can adjust this window size
 
 for t = 2:length(time)
     
@@ -141,8 +148,36 @@ for t = 2:length(time)
     % 4. Update Covariance
     P = (eye(6) - K * C) * P_prediction;
 
+
+    % RUNNING 
+    % Determine the start of the window
+    window_start = max(1, t - window_size);
+    
+    % Average the noisy measurements ('real' outputs) over the window
+    output.running(t, :) = mean(output.real(window_start:t, :), 1);
+    
+    % update theta
+    theta_running = output.running(t - 1, 2);
+
+    % For the states, we apply the same averaging to the noisy running states
+    % Update states based on linear dynamics, this works for everything
+    % except dx and dy
+    delta_x_running(1) = mean(state.running(window_start:t-1, 2), 1) * dt;
+    delta_x_running(3) = mean(state.running(window_start:t-1, 4), 1) * dt;
+    delta_x_running(5) = mean(state.running(window_start:t-1, 6), 1) * dt;
+    delta_x_running(6) = (r / I * control_input(t, 1) - r / I * control_input(t, 2)) * dt;
+
+    % Now, non-linear part
+    delta_x_running(2) = (-sin(theta_running)*(control_input(t, 1)+control_input(t, 2))/m) * dt;
+    delta_x_running(4) = (cos(theta_running)*(control_input(t, 1)+control_input(t, 2))/m - g) * dt;
+
+    state.running(t, :) = state.running(t - 1, :) + delta_x_running(:)' + state_noise;
+    
 end
 
+%RUNNING
+errors.output_clean_VS_running_total = output.running - output.clean;
+errors.states_real_VS_running = state.real - state.running;
 
 errors.output_clean_VS_real_total = output.real - output.clean;
 errors.output_clean_VS_filtered_total = output.filtered - output.clean;
@@ -156,14 +191,18 @@ errors.state_real_VS_output_filtered = output.filtered - state.real(:, [3, 5, 6]
 % Calculate the Mean Squared Error for each column (state variable)
 num_states = size(errors.states_real_VS_estimate, 2);
 rmse_values = zeros(1, num_states);
+rmse_running = zeros(1, num_states);
 
 for i = 1:num_states
     % RMSE = sqrt(mean(error^2))
     rmse_values(i) = sqrt(mean(errors.states_real_VS_estimate(:, i).^2));
+    %RUNNING
+    rmse_running(i) = sqrt(mean(errors.states_real_VS_running(:, i).^2));
 end
 
 % Store the RMSE values in the errors structure
 % state variables are typically: [x, dx, y, dy, theta, dtheta]
 errors.rmse_states = rmse_values;
-
+%RUNNING
+errors.rmse_running = rmse_running;
 end
