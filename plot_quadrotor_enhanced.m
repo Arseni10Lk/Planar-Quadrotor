@@ -266,29 +266,54 @@ end
 ax_error = subplot(4, 4, [15 16]);
 hold(ax_error, 'on'); grid(ax_error, 'on'); box(ax_error, 'on');
 
-if exist('errors', 'var') && isfield(errors, 'states_real_VS_estimate')
-    abs_errors = abs(errors.states_real_VS_estimate);
-    abs_errors(:,5) = rad2deg(abs_errors(:,5));
-    abs_errors(:,6) = rad2deg(abs_errors(:,6));
+if exist('errors', 'var') && isfield(errors, 'states_real_VS_estimate') && isfield(errors, 'states_real_VS_running')
+    
+    % Prepare Kalman Errors
+    abs_errors_kalman = abs(errors.states_real_VS_estimate);
+    abs_errors_kalman(:,5) = rad2deg(abs_errors_kalman(:,5));
+    abs_errors_kalman(:,6) = rad2deg(abs_errors_kalman(:,6));
+    
+    % Prepare Running Mean Errors
+    abs_errors_running = abs(errors.states_real_VS_running);
+    abs_errors_running(:,5) = rad2deg(abs_errors_running(:,5));
+    abs_errors_running(:,6) = rad2deg(abs_errors_running(:,6));
     
     colors = lines(6);
     state_names = {'x', 'dx', 'y', 'dy', 'θ', 'dθ'};
     
+    % Clear axes to prevent overplotting previous runs
+    cla(ax_error);
+    hold(ax_error, 'on');
+    
     for i = 1:6
         window = min(40, floor(length(time)/8));
-        smooth_err = movmean(abs_errors(:, i), window);
-        plot(ax_error, time, smooth_err, ...
+        
+        % Plot Kalman Filter (Solid Lines)
+        smooth_err_k = movmean(abs_errors_kalman(:, i), window);
+        plot(ax_error, time, smooth_err_k, ...
              'Color', colors(i, :), 'LineWidth', 1.8, ...
-             'DisplayName', state_names{i});
+             'LineStyle', '-', ...
+             'DisplayName', [state_names{i} ' (Kalman)']);
+             
+        % Plot Running Mean Filter (Dashed Lines)
+        smooth_err_r = movmean(abs_errors_running(:, i), window);
+        plot(ax_error, time, smooth_err_r, ...
+             'Color', colors(i, :), 'LineWidth', 1.5, ...
+             'LineStyle', '--', ...
+             'DisplayName', [state_names{i} ' (Running)']);
     end
     
     xlabel(ax_error, 'Time (s)', 'FontSize', 10);
     ylabel(ax_error, 'Absolute Error', 'FontSize', 10);
-    title(ax_error, 'Estimation Errors Over Time', 'FontWeight', 'bold', 'FontSize', 11);
-    legend(ax_error, 'Location', 'best', 'FontSize', 8, 'NumColumns', 3);
+    title(ax_error, 'Error Comparison: Kalman (Solid) vs Running (Dashed)', 'FontWeight', 'bold', 'FontSize', 11);
+    
+    % Adjust legend to handle the increased number of entries
+    legend(ax_error, 'Location', 'best', 'FontSize', 7, 'NumColumns', 4);
     
     plot(ax_error, [time(1) time(end)], [0 0], 'k:', ...
          'LineWidth', 0.5, 'HandleVisibility', 'off');
+    
+    grid(ax_error, 'on');
 else
     text(ax_error, 0.5, 0.5, 'Error data not available', ...
          'HorizontalAlignment', 'center', 'VerticalAlignment', 'middle');
