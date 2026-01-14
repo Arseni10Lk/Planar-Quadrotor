@@ -151,25 +151,27 @@ for t = 2:length(time)
 
     % RUNNING 
     % Determine the start of the window
-    window_start = max(1, t - window_size + 1);
+    window_start = max(1, t - window_size);
     
     % Average the noisy measurements ('real' outputs) over the window
     output.running(t, :) = mean(output.real(window_start:t, :), 1);
     
     % update theta
-    theta_running = ouput.running(t - 1, 2);
+    theta_running = output.running(t - 1, 2);
 
     % For the states, we apply the same averaging to the noisy running states
     % Update states based on linear dynamics, this works for everything
     % except dx and dy
-    delta_x_running(1) = state.running(t - 1, 2)*dt;
-    delta_x_running(3) = state.running(t - 1, 4)*dt;
-    delta_x_running(5) = state.running(t - 1, 6)*dt;
+    delta_x_running(1) = mean(state.running(window_start:t-1, 2), 1) * dt;
+    delta_x_running(3) = mean(state.running(window_start:t-1, 4), 1) * dt;
+    delta_x_running(5) = mean(state.running(window_start:t-1, 6), 1) * dt;
     delta_x_running(6) = (r / I * control_input(t, 1) - r / I * control_input(t, 2)) * dt;
 
     % Now, non-linear part
     delta_x_running(2) = (-sin(theta_running)*(control_input(t, 1)+control_input(t, 2))/m) * dt;
     delta_x_running(4) = (cos(theta_running)*(control_input(t, 1)+control_input(t, 2))/m - g) * dt;
+
+    state.running(t, :) = state.running(t - 1, :) + delta_x_running(:)' + state_noise;
     
 end
 
