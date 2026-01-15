@@ -58,16 +58,16 @@ CU3 = zeros(size(time));
 CU4 = zeros(size(time));
 
 for t = 0:109 % roll up
-    CU3(t + 1) = 4.05 * (1 + 0.001*cos(2 * 0.01 * t));
-    CU4(t + 1) = 4 * (1 + 0.001*sin(2 * 0.01 * t));
+    CU3(t + 1) = u1 * 0.81 * (1 + 0.001*cos(2 * 0.01 * t));
+    CU4(t + 1) = u2 * 0.8 * (1 + 0.001*sin(2 * 0.01 * t));
 end
 for t = 110:219  % stop rotation
-    CU3(t + 1) = 4 * (1 + 0.001*cos(2 * 0.01 * t));
-    CU4(t + 1) = 4.05 * (1 + 0.001*sin(2 * 0.01 * t));
+    CU3(t + 1) = u1 * 0.8 * (1 + 0.001*cos(2 * 0.01 * t));
+    CU4(t + 1) = u2* 0.81 * (1 + 0.001*sin(2 * 0.01 * t));
 end
 for t = 220:length(time) % fly up
-    CU3(t + 1) = 4 * (1 + 0.001*cos(2 * 0.01 * t));
-    CU4(t + 1) = 4 * (1 + 0.001*sin(2 * 0.01 * t));
+    CU3(t + 1) = u1 * 0.8 * (1 + 0.001*cos(2 * 0.01 * t));
+    CU4(t + 1) = u2 * 0.8 * (1 + 0.001*sin(2 * 0.01 * t));
 end
 
 % Create CU5 and CU6 (360 roll)
@@ -75,25 +75,25 @@ CU5 = zeros(size(time));
 CU6 = zeros(size(time));
 
 for t = 0:199 % iniiate roll
-    CU5(t + 1) = 4.04 * (1 + 0.001*cos(2 * 0.01 * t));
-    CU6(t + 1) = 4 * (1 + 0.001*sin(2 * 0.01 * t));
+    CU5(t + 1) = u1 * 0.808 * (1 + 0.001*cos(2 * 0.01 * t));
+    CU6(t + 1) = u2 * 0.8 * (1 + 0.001*sin(2 * 0.01 * t));
 end 
 for t = 200:299 % let it roll
-    CU5(t + 1) = 0 * (1 + 0.001*cos(2 * 0.01 * t));
-    CU6(t + 1) = 0 * (1 + 0.001*sin(2 * 0.01 * t));
+    CU5(t + 1) = u1 * 0 * (1 + 0.001*cos(2 * 0.01 * t));
+    CU6(t + 1) = u2 * 0 * (1 + 0.001*sin(2 * 0.01 * t));
 end 
 for t = 300:500 % stop rotation
-    CU5(t + 1) = 0 * (1 + 0.001*cos(2 * 0.01 * t));
-    CU6(t + 1) = 0.04 * (1 + 0.001*sin(2 * 0.01 * t));
+    CU5(t + 1) = u1 * 0 * (1 + 0.001*cos(2 * 0.01 * t));
+    CU6(t + 1) = u2 * 0.08 * (1 + 0.001*sin(2 * 0.01 * t));
 end
 for t = 501:length(time) % recover vertically
-    CU5(t + 1) = 5 * (1 + 0.001*cos(2 * 0.01 * t));
-    CU6(t + 1) = 5 * (1 + 0.001*sin(2 * 0.01 * t));
+    CU5(t + 1) = u1 * (1 + 0.001*cos(2 * 0.01 * t));
+    CU6(t + 1) = u2 * (1 + 0.001*sin(2 * 0.01 * t));
 end 
 
 % Create CU7 and CU8 (straight fall recovery)
-CU7 = 3.2 * (1 + 0.001*cos(2*time));
-CU8 = 3.2 * (1 + 0.001*sin(2*time));
+CU7 = u1 * 0.64 * (1 + 0.001*cos(2*time));
+CU8 = u2 * 0.64 * (1 + 0.001*sin(2*time));
 
 % Combine for sim
 control_input.basic = [CU1; CU2]';
