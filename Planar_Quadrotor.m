@@ -120,7 +120,7 @@ initial_state.roll = [0;0;50;5;0;0]; % roll
 initial_state.fall = [0;-1;15;-3;-(pi/2-atan(3/1));0]; % straight fall recovery
 
 noise_data.state_noise_amp = 0.003;
-noise_data.output_noise_amp = 0.02;
+noise_data.output_noise_amp = 0.009;
 
 %% STEP 7: SIMULATION
 
@@ -129,7 +129,6 @@ noise_data.output_noise_amp = 0.02;
 
 plot_quadrotor_enhanced(time, states, output, C, error);
 
-[rmse_mat, noise_mat, div_data, rmse_running] = robustness(rotor_data, control_input.horizontal, time, initial_state.horizontal);
+[rmse_mat, noise_mat, div_data, rmse_running] = robustness(rotor_data, control_input.horizontal, time, initial_state.horizontal, noise_data);
 
 plot_robustness_results(rmse_mat, noise_mat, div_data);
-

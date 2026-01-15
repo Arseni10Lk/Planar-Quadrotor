@@ -1,4 +1,4 @@
-function [rmse_matrix, noise_matrix, divergence_data, rmse_matrix_running] = robustness(rotor_data, control_input, time, initial_state)
+function [rmse_matrix, noise_matrix, divergence_data, rmse_matrix_running] = robustness(rotor_data, control_input, time, initial_state, noise_data_base)
 % ROBUSTNESS - Run robustness tests and return data for plotting
 % Returns: rmse_matrix (Kalman), noise_matrix, divergence_data, rmse_matrix_running (Running)
 
@@ -33,14 +33,14 @@ for case_num = 1:num_cases
 end
 
 % Run divergence analysis
-divergence_data = find_divergence_individual_states(rotor_data, control_input, time, initial_state);
+divergence_data = find_divergence_individual_states(rotor_data, control_input, time, initial_state, noise_data_base);
 
 fprintf('\n=== Analysis Complete === \n');
 end
 
 %% ================= HELPER FUNCTION - TRACKS INDIVIDUAL STATE DIVERGENCE =================
-function div_data = find_divergence_individual_states(rotor_data, control_input, time, initial_state)
-    base_noise = [0.003, 0.02]; % Base noise levels
+function div_data = find_divergence_individual_states(rotor_data, control_input, time, initial_state, noise_data_base)
+    base_noise = [noise_data_base.state_noise_amp, noise_data_base.output_noise_amp]; % Base noise levels
     max_multiplier = 50;
     multiplier = 0.2; 
     
