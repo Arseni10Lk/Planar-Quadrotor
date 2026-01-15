@@ -26,8 +26,8 @@
 
 % --- Title Page Setup ---
 \title{Planar Quadrotor}
-\subtitle{EKF-bla-bla}
-\author{Arseni Lysak}
+\subtitle{Extended Kalman Filter Design}
+\author{Arseni Lysak, Tsimafei Iliusenka, John Elvin Ndahiro, Pablo Calderon Mateo}
 
 \course{Aeronautical Systems Integration}
 
@@ -36,10 +36,10 @@
 \begin{document}
 	\maketitle
 	
-	\section{Project Overview}
+	\section{Introduction}
 	
-	This project implements an Extended Kalman Filter (EKF) to estimate the state of a 2D planar quadrotor utilizing noisy sensor measurements. The EKF integrates physics-based predictions with empirical sensor data to generate accurate state estimates.
-	
+	The aim of this project is to implement an Extended Kalman Filter (EKF) to estimate the movement of a 2D planar quadrotor (fig. \ref{fig:quadrotor_diagram}) utilizing noisy sensor measurements.
+	 
 	\begin{figure}[H]
 		\centering
 		\includegraphics[width=0.8\textwidth]{Planar_Quadrotor.png}
@@ -47,22 +47,15 @@
 		\label{fig:quadrotor_diagram}
 	\end{figure}
 	
-	\subsection{The Challenge}
-	The estimation problem presents three primary challenges:
-	\begin{itemize}
-		\item \textbf{Sensor Noise:} Measurements from the Inertial Measurement Unit (IMU) and altitude sensors are inherently unreliable and subject to jitter.
-		\item \textbf{Complex Dynamics:} The physical dynamics of a quadrotor are nonlinear and computationally complex.
-		\item \textbf{Integration Solution:} An optimal estimate requires the fusion of sensor data with mathematical models to surpass the accuracy provided by either source independently.
-	\end{itemize}
+	\section{System modeling}
 	
-	\subsection{Nonlinear System Equations}
 	The movement of the quadrotor is governed by the following nonlinear equations of motion:
-	
-	\begin{align}
-		m\ddot{x} &= -(u_1 + u_2)\sin\theta \\
-		m\ddot{y} &= (u_1 + u_2)\cos\theta - mg \\
-		I\ddot{\theta} &= r(u_1 - u_2)
-	\end{align}
+
+\begin{align}
+	m\ddot{x} &= -(u_1 + u_2)\sin\theta \label{eq:x_dyn} \\
+	m\ddot{y} &= (u_1 + u_2)\cos\theta - mg \label{eq:y_dyn} \\
+	I\ddot{\theta} &= r(u_1 - u_2) \label{eq:theta_dyn}
+\end{align}
 	
 	\noindent where:
 	\begin{itemize}
@@ -73,34 +66,8 @@
 		\item $u_1, u_2$: rotor thrust forces
 	\end{itemize}
 	
-	\section{Problem Definition}
-	
-	The simulation parameters are defined in MATLAB utilizing the following constants:
-	
-	\begin{lstlisting}[style=Matlab-editor]
-	m = 0.5;         % mass [kg] 
-	r = 0.15;        % distance from center to rotors [m]
-	I = 0.005;       % moment of inertia [kg*m^2]
-	g = 9.81;        % gravity [m/s^2]
-	dt = 0.01;       % time step [s] 
-	theta = 0;       % angle [rads]
-	u1_max = 2.45;   % force max magnitude [N]
-	u2_max = 2.45;   % force max magnitude [N]
-	\end{lstlisting}
-	
-	Time-varying control inputs are applied to induce motion:
-	
-	\begin{lstlisting}[style=Matlab-editor, caption={Control Inputs}]
-	u1 = u1_max + 0.001*cos(2*time);  
-	u2 = u2_max + 0.001*sin(2*time); 
-	\end{lstlisting}
-	
-	These inputs generate minor oscillations around a thrust level slightly exceeding the hover threshold, ensuring nontrivial motion and tilting of the quadrotor.
-	
-	\section{System Definitions}
-	
-	The system state is represented by a six-element vector $\mathbf{x}$, and the control input by a two-element vector $\mathbf{u}$:
-	
+	This would imply that the system state is represented by a six-element vector $\mathbf{x}$, and the control input is represented by a two-element vector $\mathbf{u}$:
+
 	\begin{equation}
 		\mathbf{x} = 
 		\begin{bmatrix}
@@ -112,33 +79,102 @@
 		\end{bmatrix}
 	\end{equation}
 	
-	\section{Nonlinear Perfect Conditions Simulation}
+	\section{Quadcopter definition}
 	
-	Based on the equations of motion, the true dynamics are governed by:
+	The drone parameters were assumed:
 	
-	\begin{align}
-		\ddot{x} &= \frac{-(u_1 + u_2) \sin\theta}{m} \\
-		\ddot{y} &= \frac{(u_1 + u_2)\cos\theta}{m} - g \\
-		\ddot{\theta} &= \frac{r(u_1 - u_2)} {I}
-	\end{align}
+	\begin{lstlisting}[style=Matlab-editor]
+	m = 0.5;         % mass [kg] 
+	r = 0.15;        % distance from center to rotors [m]
+	I = 0.005;       % moment of inertia [kg*m^2]
+	g = 9.81;        % gravity [m/s^2]
+	dt = 0.01;       % time step [s] 
+	theta = 0;       % angle [rads]
+	u1 = 5;          % force [N]
+	u2 = 5;          % force [N]
+	\end{lstlisting}
 	
-	These equations represent ``perfect conditions'' as they do not account for process noise. The state vector for this ideal trajectory is designated as \texttt{state.clean} in the implementation. This ensures the prediction adheres to the actual physical dynamics.
+	Four scenarios for control inputs were chosen:
 	
-	\begin{lstlisting}[style=Matlab-editor, caption={Dynamics Implementation}]
+	\begin{lstlisting}[style=Matlab-editor]
+	% Create CU1 and CU2 (basic case)
+	CU1 = u1 * 0.6 * (1 + 0.001*cos(2*time));  
+	CU2 = u2 * 0.6 * (1 + 0.001*sin(2*time));
+	
+	% Create CU3 and CU4 (horizontal flight recovery)
+	CU3 = zeros(size(time));
+	CU4 = zeros(size(time));
+	
+	for t = 0:109 % roll up
+	CU3(t + 1) = 4.05 * (1 + 0.001*cos(2 * 0.01 * t));
+	CU4(t + 1) = 4 * (1 + 0.001*sin(2 * 0.01 * t));
+	end
+	for t = 110:219  % stop rotation
+	CU3(t + 1) = 4 * (1 + 0.001*cos(2 * 0.01 * t));
+	CU4(t + 1) = 4.05 * (1 + 0.001*sin(2 * 0.01 * t));
+	end
+	for t = 220:length(time) % fly up
+	CU3(t + 1) = 4 * (1 + 0.001*cos(2 * 0.01 * t));
+	CU4(t + 1) = 4 * (1 + 0.001*sin(2 * 0.01 * t));
+	end
+	
+	% Create CU5 and CU6 (360 roll)
+	CU5 = zeros(size(time));
+	CU6 = zeros(size(time));
+	
+	for t = 0:199 % iniiate roll
+	CU5(t + 1) = 4.04 * (1 + 0.001*cos(2 * 0.01 * t));
+	CU6(t + 1) = 4 * (1 + 0.001*sin(2 * 0.01 * t));
+	end 
+	for t = 200:299 % let it roll
+	CU5(t + 1) = 0 * (1 + 0.001*cos(2 * 0.01 * t));
+	CU6(t + 1) = 0 * (1 + 0.001*sin(2 * 0.01 * t));
+	end 
+	for t = 300:500 % stop rotation
+	CU5(t + 1) = 0 * (1 + 0.001*cos(2 * 0.01 * t));
+	CU6(t + 1) = 0.04 * (1 + 0.001*sin(2 * 0.01 * t));
+	end
+	for t = 501:length(time) % recover vertically
+	CU5(t + 1) = 5 * (1 + 0.001*cos(2 * 0.01 * t));
+	CU6(t + 1) = 5 * (1 + 0.001*sin(2 * 0.01 * t));
+	end 
+	
+	% Create CU7 and CU8 (straight fall recovery)
+	CU7 = 3.2 * (1 + 0.001*cos(2*time));
+	CU8 = 3.2 * (1 + 0.001*sin(2*time));
+	
+	% Combine for sim
+	control_input.basic = [CU1; CU2]';
+	control_input.horizontal = [CU3; CU4]';
+	control_input.roll = [CU5; CU6]';
+	control_input.fall = [CU7; CU8]';
+	\end{lstlisting}
+	
+	A thrust generated by a rotor is inherently periodic an this is recreated using sine and cosine functions.
+
+
+    \section{Clean simulation}
+	
+	Equations \ref{eq:x_dyn}-\ref{eq:theta_dyn} represent perfect conditions as they do not account for process noise. The state vector for this ideal trajectory is designated as \texttt{state.clean} in the code. This ensures the prediction adheres to the actual physical dynamics.
+	
+	Based on the equations \ref{eq:x_dyn}-\ref{eq:theta_dyn} Euler integration is conducted for each time step: 
+	
+	\begin{lstlisting}[style=Matlab-editor]
+	% update theta
+	theta_clean = state.clean(t - 1, 5);
+	
+	% Update states based on linear dynamics, this works for everything
+	% except dx and dy
 	delta_x_clean(1) = state.clean(t - 1, 2)*dt;
 	delta_x_clean(3) = state.clean(t - 1, 4)*dt;
 	delta_x_clean(5) = state.clean(t - 1, 6)*dt;
 	delta_x_clean(6) = (r / I * control_input(t, 1) - r / I * control_input(t, 2)) * dt;
 	
+	% Now, non-linear part
 	delta_x_clean(2) = (-sin(theta_clean)*(control_input(t, 1)+control_input(t, 2))/m) * dt;
 	delta_x_clean(4) = (cos(theta_clean)*(control_input(t, 1)+control_input(t, 2))/m - g) * dt;
-	\end{lstlisting}
 	
-	\noindent \textbf{Note on gravity:} The term $-mg$ in the vertical force balance accounts for gravitational pull, resulting in the $-g$ term observed in the $\ddot{y}$ computation within the code.
-	
-	Following the calculation of differentials, the states are updated:
-	
-	\begin{lstlisting}[style=Matlab-editor]
+	% Lastly, updating states
 	state.clean(t, :) = state.clean(t-1, :) + delta_x_clean(:)';
 	output.clean(t, :) = (C * state.clean(t, :)')';
 	\end{lstlisting}
@@ -148,11 +184,11 @@
 	The real-world trajectory (\texttt{state.real}) differs from the perfect trajectory solely through the introduction of process and measurement noise. Gaussian noise is utilized, with amplitudes selected as follows:
 	
 	\begin{lstlisting}[style=Matlab-editor]
-	state_noise = 0.004 * randn(1,6);
-	output_noise = 0.05 * randn(1,3);
+	noise_data.state_noise_amp = 0.003;
+	noise_data.output_noise_amp = 0.01;
 	\end{lstlisting}
 	
-	The governing equations remain unchanged, with noise injected during the state update step:
+	The governing equations \ref{eq:x_dyn}-\ref{eq:theta_dyn} remain unchanged, with noise injected during the state update step:
 	
 	\begin{lstlisting}[style=Matlab-editor]
 	state.real(t, :) = state.real(t - 1, :) + delta_x_real(:)' + state_noise;

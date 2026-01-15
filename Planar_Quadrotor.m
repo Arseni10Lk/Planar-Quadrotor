@@ -11,8 +11,8 @@ I = 0.005;       % moment of inertia [kg*m^2]
 g = 9.81;        % gravity [m/s^2]
 dt = 0.01;       % time step [s] 
 theta = 0;       % angle [rads]
-u1 = 2.45;       % force [N]
-u2 = 2.45;       % force [N]
+u1 = 5;       % force [N]
+u2 = 5;       % force [N]
 
 % Structure definition
 rotor_data.m = m;
@@ -37,14 +37,6 @@ A = [0  1  0  0   0   0;
 % It desscribes the states, so let's say it is rotor data 
 rotor_data.A = A;
 
-% B matrix - Control input
-B = [0       0;
-     0       0;
-     0       0;
-     1/m     1/m;
-     0       0;
-     r/I     -r/I]; 
-
 % C matrix - Measurements
 C = [0  0  1  0  0  0;
      0  0  0  0  1  0;
@@ -53,15 +45,13 @@ C = [0  0  1  0  0  0;
 rotor_data.C = C; % It says what we measure, so let's say it is rotor data 
 % (like what the sensors are)
 
-D = zeros(3,2);  
-
 %% STEP 4: DEFINE TIME VECTOR
 time = 0:dt:t_max;  
 
 %% STEP 5: DEFINE CONTROL INPUTS
 % Create CU1 and CU2 (basic case)
-CU1 = 3 * (1 + 0.001*cos(2*time));  
-CU2 = 3 * (1 + 0.001*sin(2*time));
+CU1 = u1 * 0.6 * (1 + 0.001*cos(2*time));  
+CU2 = u2 * 0.6 * (1 + 0.001*sin(2*time));
 
 % Create CU3 and CU4 (horizontal flight recovery)
 CU3 = zeros(size(time));
@@ -105,7 +95,7 @@ end
 CU7 = 3.2 * (1 + 0.001*cos(2*time));
 CU8 = 3.2 * (1 + 0.001*sin(2*time));
 
-% Combine for lsim
+% Combine for sim
 control_input.basic = [CU1; CU2]';
 control_input.horizontal = [CU3; CU4]';
 control_input.roll = [CU5; CU6]';
@@ -120,7 +110,7 @@ initial_state.roll = [0;0;50;5;0;0]; % roll
 initial_state.fall = [0;-1;15;-3;-(pi/2-atan(3/1));0]; % straight fall recovery
 
 noise_data.state_noise_amp = 0.003;
-noise_data.output_noise_amp = 0.009;
+noise_data.output_noise_amp = 0.01;
 
 %% STEP 7: SIMULATION
 
