@@ -195,24 +195,53 @@
 	output.real(t, :) = (C*state.real(t, :)')' + output_noise;
 	\end{lstlisting}
 	
-	\section{System Linearization for the Extended Kalman Filter}
+	\section{Extended Kalman Filter Design}
 	
-	The Extended Kalman Filter propagates uncertainty (covariance) by requiring a local linear approximation of the nonlinear dynamics. This is accomplished by computing the Jacobian matrices of the system equations with respect to state and measurement variables.
+	
+	The "default" Kalman filter addresses the general problem of trying to estimate the state of a discrete-time controlled process that is governed by a linear stochastic difference equation. A Kalman filter that linearizes about the current mean and covariance is referred to as an extended Kalman filter or EKF.
+	
+	The working principle of the filter is deciding how much to trust sensor measurements compared to the predicted values in accordance with the ideal mathematical model (fig. \ref{fig:ekfprinciple}).
+		
+	\begin{figure}
+		\centering
+		\includegraphics[width=1\linewidth]{ASI_EKFprinciple}
+		\caption{A complete picture of the operation of the extended Kalman filter.}
+		\label{fig:ekfprinciple}
+	\end{figure}
+	
 	
 	\subsection{Jacobian for Covariance Propagation}
-	To update the error covariance, the state transition Jacobian $A$ is derived from the partial derivatives of the dynamics:
 	
+	\noindent To estimate a process with non-linear difference and measurement relationships, it is possible to begin by writing new governing equations that linearize an estimate about the point k,
+	\begin{align}
+		x_k &\approx \tilde{x}_k + A(x_{k-1} - \hat{x}_{k-1}) + w_{k-1}, \label{eq:x_k}\\
+		z_k &\approx \tilde{z}_k + H(x_k - \tilde{x}_k) + v_k \label{eq:z_k}
+	\end{align}
+	where
 	\begin{itemize}
-		\item $\frac{\partial \ddot{x}}{\partial \theta} = -\frac{\cos\theta}{m}(u_1 + u_2)$
-		\item $\frac{\partial \ddot{y}}{\partial \theta} = -\frac{\sin\theta}{m}(u_1 + u_2)$
+		\item $x_k$ and $z_k$ are the actual state and measurement vectors,
+		\item $\tilde{x}_k$ and $\tilde{z}_k$ are the approximate state and measurement vectors
+		\item $\hat{x}_k$ is an \textit{aposteriori} estimate of the state at step $k$,
+		\item the random variables $w_k$ and $v_k$ represent the process and measurement noise
+		\item $A$ is the Jacobian matrix of partial derivatives of $f$ with respect to $x$, that is
+		\[
+		A_{[i, j]} = \frac{\partial f_{[i]}}{\partial x_{[j]}}(\hat{x}_{k-1}, u_k, 0),
+		\]
+		\item $H$ is the Jacobian matrix of partial derivatives of $h$ with respect to $x$,
+		\[
+		H_{[i, j]} = \frac{\partial h_{[i]}}{\partial x_{[j]}}(\tilde{x}_k, 0),
+		\]
 	\end{itemize}
 	
-	Control input derivatives:
-	\begin{itemize}
-		\item $\frac{\partial \ddot{x}}{\partial u_1} = -\frac{\sin\theta}{m}, \quad \frac{\partial \ddot{x}}{\partial u_2} = -\frac{\sin\theta}{m}$
-		\item $\frac{\partial \ddot{y}}{\partial u_1} = \frac{\cos\theta}{m}, \quad \frac{\partial \ddot{y}}{\partial u_2} = \frac{\cos\theta}{m}$
-		\item $\frac{\partial \ddot{\theta}}{\partial u_1} = \frac{r}{I}, \quad \frac{\partial \ddot{\theta}}{\partial u_2} = -\frac{r}{I}$
-	\end{itemize}
+	
+	The Extended Kalman Filter propagates uncertainty (covariance) by requiring a local linear approximation of the nonlinear dynamics in the form of matrices $A$ and $H$.
+	
+	To update the error covariance, the state transition Jacobian $A$ is derived from the partial derivatives of the dynamics, which are defined by equations \ref{eq:x_dyn} - \ref{eq:theta_dyn}:
+	\begin{align}
+		\frac{\partial \ddot{x}}{\partial \theta} = -\frac{\cos\theta}{m}(u_1 + u_2) \label{eq:partial_x} \\
+		\frac{\partial \ddot{y}}{\partial \theta} = -\frac{\sin\theta}{m}(u_1 + u_2) \label{eq:partial_y}
+	\end{align}
+	
 	
 	The EKF is employed because the quadrotor system is nonlinear—motion is dependent on the sine and cosine of the angle $\theta$. The EKF linearizes the system at each time step using the current optimal estimate prior to applying standard Kalman update equations.
 	
