@@ -1,6 +1,6 @@
-function [rmse_matrix, noise_matrix, divergence_data] = robustness(rotor_data, control_input, time, initial_state)
+function [rmse_matrix, noise_matrix, divergence_data, rmse_matrix_running] = robustness(rotor_data, control_input, time, initial_state)
 % ROBUSTNESS - Run robustness tests and return data for plotting
-% Returns: rmse_matrix (4x6), noise_matrix (4x2), divergence_data
+% Returns: rmse_matrix (Kalman), noise_matrix, divergence_data, rmse_matrix_running (Running)
 
 fprintf('\n=== Running Robustness Analysis ===\n');
 
@@ -14,6 +14,7 @@ noise_cases = [
 
 num_cases = size(noise_cases, 1);
 rmse_matrix = zeros(num_cases, 6);
+rmse_matrix_running = zeros(num_cases, 6); % NEW: Store running filter RMSE
 noise_matrix = noise_cases;
 
 % Run simulations for Cases 1-4
@@ -24,7 +25,9 @@ for case_num = 1:num_cases
     [~, ~, errors] = simulation_quadrotor(rotor_data, control_input, noise_data, time, initial_state);
     
     rmse_matrix(case_num, :) = errors.rmse_states;
-    fprintf('Case %d RMSE: ', case_num);
+    rmse_matrix_running(case_num, :) = errors.rmse_running; % NEW
+    
+    fprintf('Case %d RMSE (Kalman): ', case_num);
     fprintf('%.4f ', errors.rmse_states);
     fprintf('\n');
 end
@@ -39,42 +42,37 @@ end
 function div_data = find_divergence_individual_states(rotor_data, control_input, time, initial_state)
     base_noise = [0.003, 0.02]; % Base noise levels
     max_multiplier = 50;
-    multiplier = 0.2; % Start from 0.2x as suggested
+    multiplier = 0.2; 
     
     div_data.multipliers = [];
-    div_data.rmse_values = [];
-    div_data.diverged = false;
+    div_data.rmse_values = [];          % Kalman RMSE history
+    div_data.rmse_values_running = [];  % NEW: Running RMSE history
     
-    % State names for field creation
+    % State names
     state_names = {'x', 'dx', 'y', 'dy', 'theta', 'dtheta'};
-    display_names = {'x', 'dx', 'y', 'dy', 'θ', 'dθ'}; % For display
+    display_names = {'x', 'dx', 'y', 'dy', 'θ', 'dθ'};
     div_data.state_names = state_names;
     div_data.display_names = display_names;
     
-    % Initialize divergence tracking for EACH STATE
+    % Initialize divergence tracking for BOTH filters
     for i = 1:6
-        div_data.(['div_point_' state_names{i}]) = 0;  % Will be updated
-        div_data.(['actually_diverged_' state_names{i}]) = false; % True if exceeded threshold
-        div_data.(['threshold_' state_names{i}]) = 0; % Store threshold for reference
+        % Kalman Tracking
+        div_data.(['div_point_' state_names{i}]) = 0;
+        div_data.(['actually_diverged_' state_names{i}]) = false;
+        div_data.(['threshold_' state_names{i}]) = 0;
+        
+        % NEW: Running Filter Tracking
+        div_data.(['div_point_running_' state_names{i}]) = 0;
+        div_data.(['actually_diverged_running_' state_names{i}]) = false;
     end
     
-    % ============ CRITICAL: SET DIVERGENCE THRESHOLDS HERE ============
-    % Adjust these values to match system's expected performance
+    % Thresholds (Shared between filters)
     thresholds = [5.0, 1.0, 0.5, 0.2, 0.5, 0.3];  
-   
-    % ==================================================================
-    
     for i = 1:6
         div_data.(['threshold_' state_names{i}]) = thresholds(i);
     end
     
-    fprintf('\n--- Starting Individual State Divergence Analysis ---\n');
-    fprintf('Testing from %.1fx to %.1fx noise multiplier\n', multiplier, max_multiplier);
-    fprintf('\nCurrent divergence thresholds:\n');
-    fprintf('  x:   %.1f m      y:   %.1f m\n', thresholds(1), thresholds(3));
-    fprintf('  dx:  %.1f m/s    dy:  %.1f m/s\n', thresholds(2), thresholds(4));
-    fprintf('  θ:   %.1f rad    dθ:  %.1f rad/s\n', thresholds(5), thresholds(6));
-    fprintf('\n(Adjust thresholds in code if needed)\n');
+    fprintf('\n--- Starting Dual-Filter Divergence Analysis ---\n');
     
     iteration = 0;
     while multiplier <= max_multiplier
@@ -86,94 +84,66 @@ function div_data = find_divergence_individual_states(rotor_data, control_input,
         
         div_data.multipliers(end+1) = multiplier;
         div_data.rmse_values(end+1, :) = errors.rmse_states;
+        div_data.rmse_values_running(end+1, :) = errors.rmse_running; % NEW
         
-        % Check EACH STATE individually for divergence
-        any_state_diverged_this_iteration = false;
-        
+        % Check EACH STATE for divergence (Kalman & Running)
         for state_idx = 1:6
-            current_rmse = errors.rmse_states(state_idx);
             threshold = thresholds(state_idx);
+            s_name = state_names{state_idx};
             
-            % Check if this state has exceeded its threshold
-            if current_rmse > threshold
-                % Mark as diverged if not already
-                if ~div_data.(['actually_diverged_' state_names{state_idx}])
-                    div_data.(['actually_diverged_' state_names{state_idx}]) = true;
-                    div_data.(['div_point_' state_names{state_idx}]) = multiplier;
-                    fprintf('  ✓ %s diverged at %.1fx (RMSE: %.4f > %.4f)\n', ...
-                            display_names{state_idx}, multiplier, current_rmse, threshold);
+            % 1. Check Kalman
+            if errors.rmse_states(state_idx) > threshold
+                if ~div_data.(['actually_diverged_' s_name])
+                    div_data.(['actually_diverged_' s_name]) = true;
+                    div_data.(['div_point_' s_name]) = multiplier;
+                    fprintf('  [Kalman]  %s diverged at %.1fx\n', display_names{state_idx}, multiplier);
                 end
-                any_state_diverged_this_iteration = true;
+            end
+            
+            % 2. Check Running (NEW)
+            if errors.rmse_running(state_idx) > threshold
+                if ~div_data.(['actually_diverged_running_' s_name])
+                    div_data.(['actually_diverged_running_' s_name]) = true;
+                    div_data.(['div_point_running_' s_name]) = multiplier;
+                    fprintf('  [Running] %s diverged at %.1fx\n', display_names{state_idx}, multiplier);
+                end
             end
         end
         
-        % Update overall divergence flag
-        if any_state_diverged_this_iteration && ~div_data.diverged
-            div_data.diverged = true;
-            div_data.divergence_point = multiplier;
-            div_data.divergence_noise = [noise_data.state_noise_amp, noise_data.output_noise_amp];
-        end
-        
-        % Progress indicator
+        % Progress
         if mod(iteration, 10) == 0
-            fprintf('  Progress: %.1f/%.1f (%.0f%%)\n', ...
-                    multiplier, max_multiplier, (multiplier/max_multiplier)*100);
+            fprintf('  Progress: %.1f/%.1f\n', multiplier, max_multiplier);
         end
         
-        % Early exit if ALL states have diverged
+        % Early exit: Only if BOTH filters have failed on ALL states
         all_diverged = true;
         for state_idx = 1:6
-            if ~div_data.(['actually_diverged_' state_names{state_idx}])
+            s_name = state_names{state_idx};
+            if ~div_data.(['actually_diverged_' s_name]) || ~div_data.(['actually_diverged_running_' s_name])
                 all_diverged = false;
                 break;
             end
         end
         
         if all_diverged
-            fprintf('  All 6 states have diverged, stopping analysis.\n');
+            fprintf('  All states in both filters diverged. Stopping.\n');
             break;
         end
         
-        % Increment multiplier
         multiplier = multiplier + 0.2;
     end
     
-    % Ensure ALL states have a div_point (use max tested for stable states)
+    % Cleanup: Set stable states to max_tested
     max_tested = max(div_data.multipliers);
-    for state_idx = 1:6
-        % If state never diverged, set div_point to max tested
-        if ~div_data.(['actually_diverged_' state_names{state_idx}])
-            div_data.(['div_point_' state_names{state_idx}]) = max_tested;
-            fprintf('  ○ %s stable (max tested: %.1fx)\n', ...
-                    display_names{state_idx}, max_tested);
-        end
-    end
-    
-    % Final summary
-    fprintf('\n--- Individual State Divergence Results ---\n');
-    diverged_count = 0;
-    stable_count = 0;
-    
-    for state_idx = 1:6
-        div_point = div_data.(['div_point_' state_names{state_idx}]);
-        actually_diverged = div_data.(['actually_diverged_' state_names{state_idx}]);
-        
-        if actually_diverged
-            diverged_count = diverged_count + 1;
-            fprintf('  %-4s: DIVERGED at %6.1fx\n', ...
-                    display_names{state_idx}, div_point);
-        else
-            stable_count = stable_count + 1;
-            fprintf('  %-4s: STABLE   up to %6.1fx\n', ...
-                    display_names{state_idx}, div_point);
-        end
-    end
-    
-    fprintf('\nSummary: %d diverged, %d stable\n', diverged_count, stable_count);
-    fprintf('------------------------------------------\n');
-    
-    % Store summary stats
-    div_data.diverged_count = diverged_count;
-    div_data.stable_count = stable_count;
     div_data.max_multiplier_tested = max_tested;
+    
+    for state_idx = 1:6
+        s_name = state_names{state_idx};
+        if ~div_data.(['actually_diverged_' s_name])
+            div_data.(['div_point_' s_name]) = max_tested;
+        end
+        if ~div_data.(['actually_diverged_running_' s_name])
+            div_data.(['div_point_running_' s_name]) = max_tested;
+        end
+    end
 end

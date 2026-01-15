@@ -1,10 +1,9 @@
 function plot_quadrotor_enhanced(time, state_data, output_data, C, errors)
 
-
 % Force light theme
 set(0, 'DefaultFigureColor', 'white');
 
-% Get screen size
+% Get screen size and calculate figure dimensions
 screen_size = get(0, 'ScreenSize');
 fig_width = min(1400, screen_size(3) * 0.9);
 fig_height = min(1000, screen_size(4) * 0.9);
@@ -17,335 +16,219 @@ fig = figure('Name', 'Planar Quadrotor: Final State Estimation', ...
              'Position', [fig_x, fig_y, fig_width, fig_height], ...
              'Color', 'white');
 
-%% ================= 1. CLEAN 2D TRAJECTORY (NO ORIENTATION KEY) =================
+%% ================= 1. CLEAN 2D TRAJECTORY (Top-Left 2x2) =================
+% Spanning rows 1 and 2, columns 1 and 2
 ax_traj = subplot(4, 4, [1 2 5 6]);
 hold(ax_traj, 'on'); 
 grid(ax_traj, 'on'); 
 box(ax_traj, 'on');
 axis(ax_traj, 'equal');
 
-N = length(time);
-
-% === PLOT TRAJECTORIES ===
-% 1. Ideal trajectory (black dashed)
+% === PLOT DATA (No DisplayNames needed here, legends are offloaded) ===
 plot(ax_traj, state_data.clean(:,1), state_data.clean(:,3), '--', ...
-     'Color', [0.4 0.4 0.4], 'LineWidth', 1.5, 'DisplayName', 'Ideal Trajectory');
+     'Color', [0.4 0.4 0.4], 'LineWidth', 1.5);
 
-% 2. EKF estimated trajectory (blue solid)
 plot(ax_traj, state_data.estimate(:,1), state_data.estimate(:,3), 'b-', ...
-     'LineWidth', 2.5, 'DisplayName', 'EKF Estimate');
+     'LineWidth', 2.5);
 
-% 3. Real trajectory (red solid)
 plot(ax_traj, state_data.real(:,1), state_data.real(:,3), 'r-', ...
-     'LineWidth', 1.5, 'DisplayName', 'Real Trajectory (Noisy)');
+     'LineWidth', 1.5);
 
-% === ADD CLEAN ORIENTATION BARS (NO CLUTTER) ===
-num_bars = 10;
+% === ADD ORIENTATION BARS ===
+N = length(time);
+num_bars = 15;
 bar_indices = round(linspace(1, N, num_bars));
-
-% Scale parameters
-bar_length = 10.0;    % Visible but not overwhelming
+bar_length = 10.0;
 arrow_length = 4.0;
 
 for bar_idx = 1:num_bars
     i = bar_indices(bar_idx);
-    x_pos = state_data.estimate(i, 1);
-    y_pos = state_data.estimate(i, 3);
-    theta = state_data.estimate(i, 5);
+    x_pos = state_data.real(i, 1);
+    y_pos = state_data.real(i, 3);
+    theta = state_data.real(i, 5);
     
-    % Orientation calculations
-    thrust_angle = theta;               % Thrust direction
-    body_angle = theta + pi/2;          % Body direction
+    % Bar coords
+    bx = (bar_length/2) * cos(theta);
+    by = (bar_length/2) * sin(theta);
     
-    % === CREATE CLEAN ORIENTATION BAR ===
-    bar_start_x = x_pos - (bar_length/2) * cos(body_angle);
-    bar_start_y = y_pos - (bar_length/2) * sin(body_angle);
-    bar_end_x = x_pos + (bar_length/2) * cos(body_angle);
-    bar_end_y = y_pos + (bar_length/2) * sin(body_angle);
+    % Draw bar
+    plot(ax_traj, [x_pos-bx, x_pos+bx], [y_pos-by, y_pos+by], ...
+         'Color', [0.1 0.6 0.1], 'LineWidth', 5);
     
-    % Draw the body bar
-    if bar_idx == 1
-        plot(ax_traj, [bar_start_x, bar_end_x], [bar_start_y, bar_end_y], ...
-             'Color', [0.1 0.6 0.1], 'LineWidth', 5, ...
-             'DisplayName', 'Drone Body');
-    else
-        plot(ax_traj, [bar_start_x, bar_end_x], [bar_start_y, bar_end_y], ...
-             'Color', [0.1 0.6 0.1], 'LineWidth', 5, ...
-             'HandleVisibility', 'off');
-    end
-    
-    % === ADD THRUST ARROW ===
-    if bar_idx == 1
-        quiver(ax_traj, x_pos, y_pos, ...
-               arrow_length * cos(thrust_angle), arrow_length * sin(thrust_angle), ...
-               'MaxHeadSize', 1.2, 'Color', [0.9 0.1 0.1], 'LineWidth', 3, ...
-               'AutoScale', 'off', 'DisplayName', 'Thrust');
-    else
-        quiver(ax_traj, x_pos, y_pos, ...
-               arrow_length * cos(thrust_angle), arrow_length * sin(thrust_angle), ...
-               'MaxHeadSize', 1.2, 'Color', [0.9 0.1 0.1], 'LineWidth', 3, ...
-               'AutoScale', 'off', 'HandleVisibility', 'off');
-    end
-    
-    % Minimal center marker
-    scatter(ax_traj, x_pos, y_pos, 20, [0.3 0.3 0.3], 'filled', 'o', ...
-            'HandleVisibility', 'off');
+    % Draw Arrow
+    quiver(ax_traj, x_pos, y_pos, ...
+           arrow_length * cos(theta + pi/2), arrow_length * sin(theta + pi/2), ...
+           'MaxHeadSize', 1.2, 'Color', [0.9 0.1 0.1], 'LineWidth', 3, ...
+           'AutoScale', 'off');
+       
+    scatter(ax_traj, x_pos, y_pos, 20, [0.3 0.3 0.3], 'filled', 'o');
 end
 
-% === START AND END MARKERS ===
-% Start: Cyan (not green)
-scatter(ax_traj, state_data.clean(1,1), state_data.clean(1,3), ...
-        180, [0 0.7 0.7], 'filled', '^', 'LineWidth', 2, ...  % Cyan
-        'MarkerEdgeColor', 'k', 'DisplayName', 'Start');
+% Start/End Markers
+scatter(ax_traj, state_data.real(1,1), state_data.real(1,3), ...
+        50, [0 0.7 0.7], 'filled', '^', 'LineWidth', 1, 'MarkerEdgeColor', 'k');
+scatter(ax_traj, state_data.real(end,1), state_data.real(end,3), ...
+        50, [1 0.5 0], 'filled', 'v', 'LineWidth', 1, 'MarkerEdgeColor', 'k');
 
-% End: Orange
-scatter(ax_traj, state_data.clean(end,1), state_data.clean(end,3), ...
-        180, [1 0.5 0], 'filled', 'v', 'LineWidth', 2, ...
-        'MarkerEdgeColor', 'k', 'DisplayName', 'End');
+% Labels
+xlabel(ax_traj, 'Horizontal Position, x (m)', 'FontWeight', 'bold', 'FontSize', 10);
+ylabel(ax_traj, 'Altitude, y (m)', 'FontWeight', 'bold', 'FontSize', 10);
+title(ax_traj, '2D Trajectory', 'FontWeight', 'bold', 'FontSize', 11);
 
-% Labels and legend
-xlabel(ax_traj, 'Horizontal Position, x (m)', 'FontWeight', 'bold', 'FontSize', 11);
-ylabel(ax_traj, 'Altitude, y (m)', 'FontWeight', 'bold', 'FontSize', 11);
-title(ax_traj, '2D Trajectory with Drone Orientation', ...
-      'FontWeight', 'bold', 'FontSize', 12);
-legend(ax_traj, 'Location', 'best', 'FontSize', 9);
+% Fix Axis Limits to avoid crunching
+x_margin = bar_length * 0.8;
+y_margin = bar_length * 0.8;
+xlim(ax_traj, [min(state_data.estimate(:,1))-x_margin, max(state_data.estimate(:,1))+x_margin]);
+ylim(ax_traj, [min(state_data.estimate(:,3))-y_margin, max(state_data.estimate(:,3))+y_margin]);
 
-% Auto-adjust axis
-x_margin = bar_length * 0.5;
-y_margin = bar_length * 0.5;
-x_lim = [min(state_data.estimate(:,1))-x_margin, max(state_data.estimate(:,1))+x_margin];
-y_lim = [min(state_data.estimate(:,3))-y_margin, max(state_data.estimate(:,3))+y_margin];
-axis(ax_traj, [x_lim, y_lim]);
 
-%% ================= 2. RMSE SUMMARY =================
-ax_info = subplot(4, 4, [3 4]);
+%% ================= 2. RMSE SUMMARY & DUMMY LEGENDS (Top-Right 2x2) =================
+% Spanning rows 1 & 2, cols 3 & 4.
+ax_info = subplot(4, 4, [3 4 7 8]);
+hold(ax_info, 'on');
 axis(ax_info, 'off');
+xlim(ax_info, [0 1]);
+ylim(ax_info, [0 1]);
 
+% --- A. DUMMY PLOTS FOR TRAJECTORY LEGEND ---
+% Invisible lines used only to generate the legend entries on this panel
+h_d_ideal = plot(ax_info, NaN, NaN, '--', 'Color', [0.4 0.4 0.4], 'LineWidth', 1.5, 'DisplayName', 'Ideal');
+h_d_ekf   = plot(ax_info, NaN, NaN, 'b-', 'LineWidth', 2.5, 'DisplayName', 'EKF');
+h_d_real  = plot(ax_info, NaN, NaN, 'r-', 'LineWidth', 1.5, 'DisplayName', 'Real');
+h_d_body  = plot(ax_info, NaN, NaN, '-', 'Color', [0.1 0.6 0.1], 'LineWidth', 5, 'DisplayName', 'Body');
+h_d_thrust= plot(ax_info, NaN, NaN, '-', 'Color', [0.9 0.1 0.1], 'LineWidth', 2, 'DisplayName', 'Thrust');
+h_d_start = scatter(ax_info, NaN, NaN, 100, [0 0.7 0.7], 'filled', '^', 'MarkerEdgeColor', 'k', 'DisplayName', 'Start');
+h_d_end   = scatter(ax_info, NaN, NaN, 100, [1 0.5 0], 'filled', 'v', 'MarkerEdgeColor', 'k', 'DisplayName', 'End');
+
+% TRAJECTORY LEGEND -> PLACED INSIDE 'NORTH'
+% 'North' keeps it inside the box, so it doesn't trigger layout resizing.
+hL_traj = legend(ax_info, [h_d_ideal, h_d_ekf, h_d_real, h_d_body, h_d_thrust, h_d_start, h_d_end], ...
+       'Location', 'north', 'Orientation', 'horizontal', 'FontSize', 8, 'NumColumns', 3);
+set(hL_traj, 'ItemTokenSize', [15, 18], 'Box', 'off');
+title(hL_traj, 'Trajectory Legend');
+
+% --- B. RMSE TEXT ---
 if exist('errors', 'var') && isfield(errors, 'rmse_states')
-    rmse_text = {'ESTIMATION ACCURACY (RMSE)', ...
-                 '===============================', ...
-                 ''};
+    rmse_text = {'ESTIMATION ACCURACY (RMSE)', '===============================', ''};
     
     state_labels = {
-        'Horizontal Position (x)    : ';
-        'Horizontal Velocity (dx)   : ';
-        'Vertical Position (y)      : ';
-        'Vertical Velocity (dy)     : ';
-        'Pitch Angle (θ)           : ';
-        'Pitch Rate (dθ)           : '
+        'x (Pos) : '; 'dx(Vel) : ';
+        'y (Pos) : '; 'dy(Vel) : ';
+        'θ (Ang) : '; 'dθ(Rate): '
     };
     
     for i = 1:6
         if i <= 4
-            value = errors.rmse_states(i);
-            if i == 1 || i == 3
-                unit = ' m';
-            else
-                unit = ' m/s';
-            end
+            val = errors.rmse_states(i);
+            unit = ' m'; if mod(i,2)==0, unit=' m/s'; end
         else
-            value = rad2deg(errors.rmse_states(i));
-            if i == 5
-                unit = '°';
-            else
-                unit = '°/s';
-            end
+            val = rad2deg(errors.rmse_states(i));
+            unit = ' deg'; if i==6, unit=' deg/s'; end
         end
-        rmse_text{end+1} = sprintf('%s%8.4f%s', state_labels{i}, value, unit);
+        rmse_text{end+1} = sprintf('%s%7.4f%s', state_labels{i}, val, unit);
     end
-    
-    % Performance summary
-    rmse_text{end+1} = '';
-    rmse_text{end+1} = 'Performance Summary:';
-    rmse_text{end+1} = sprintf('  Position Error: %8.4f m', mean(errors.rmse_states([1,3])));
-    rmse_text{end+1} = sprintf('  Velocity Error: %8.4f m/s', mean(errors.rmse_states([2,4])));
-    rmse_text{end+1} = sprintf('  Angle Error:    %8.4f°', rad2deg(mean(errors.rmse_states([5,6]))));
-    
-    % Rating
-    avg_error = mean(errors.rmse_states(1:4));
-    if avg_error < 0.01
-        rating = 'EXCELLENT';
-        color = [0 0.6 0];
-    elseif avg_error < 0.05
-        rating = 'GOOD';
-        color = [0 0.4 0.8];
-    else
-        rating = 'FAIR';
-        color = [1 0.5 0];
-    end
-    
-    rmse_text{end+1} = '';
-    rmse_text{end+1} = sprintf('Overall: %s', rating);
     
 else
-    rmse_text = {'No RMSE data available'};
-    color = [0.3 0.3 0.3];
+    rmse_text = {'No RMSE data'};
 end
 
-text(0.05, 0.95, rmse_text, ...
-     'FontName', 'FixedWidth', 'FontSize', 9.5, ...
-     'VerticalAlignment', 'top', ...
-     'BackgroundColor', [0.97 0.97 0.97], ...
-     'EdgeColor', [0.8 0.8 0.8], 'LineWidth', 1);
+% Draw text in the MIDDLE (y=0.45) to avoid overlapping with top/bottom legends
+text(0.5, 0.45, rmse_text, ...
+     'Parent', ax_info, ...
+     'FontName', 'FixedWidth', 'FontSize', 9, ...
+     'HorizontalAlignment', 'center', ...
+     'VerticalAlignment', 'middle', ...
+     'BackgroundColor', [0.98 0.98 0.98], ...
+     'EdgeColor', [0.9 0.9 0.9], 'Margin', 6);
 
-if exist('errors', 'var') && isfield(errors, 'rmse_states')
-    rating_line = findobj(ax_info, 'String', sprintf('Overall: %s', rating));
-    if ~isempty(rating_line)
-        set(rating_line, 'Color', color, 'FontWeight', 'bold', 'FontSize', 10);
-    end
-end
 
-title(ax_info, 'Estimation Performance', ...
-      'FontWeight', 'bold', 'FontSize', 11);
-
-%% ================= 3. ALL 6 STATE PLOTS (RED LINES 70% THICKER) =================
+%% ================= 3. ALL 6 STATE PLOTS (Rows 3 & 4) =================
 state_positions = [9, 10, 11, 12, 13, 14];
-
 state_config = {
-    {'x (m)', 'Horizontal Position'};
-    {'dx/dt (m/s)', 'Horizontal Velocity'};
-    {'y (m)', 'Vertical Position'};
-    {'dy/dt (m/s)', 'Vertical Velocity'};
-    {'θ (deg)', 'Pitch Angle'};
-    {'dθ/dt (deg/s)', 'Pitch Rate'};
+    {'x (m)', 'Horizontal Position'}; {'dx/dt (m/s)', 'Horizontal Velocity'};
+    {'y (m)', 'Vertical Position'};   {'dy/dt (m/s)', 'Vertical Velocity'};
+    {'θ (deg)', 'Pitch Angle'};       {'dθ/dt (deg/s)', 'Pitch Rate'};
 };
 
-% === KEY: RED LINES THICKER THAN BLUE ===
+blue_lw = 2.0; red_lw = 3.0;
+plot_handles = [];
 
-blue_line_width = 2.0;          
-red_line_width = blue_line_width * 1.7; 
-
-for state_idx = 1:6
-    ax_state = subplot(4, 4, state_positions(state_idx));
-    hold(ax_state, 'on'); 
-    grid(ax_state, 'on'); 
-    box(ax_state, 'on');
+for idx = 1:6
+    ax_state = subplot(4, 4, state_positions(idx));
+    hold(ax_state, 'on'); grid(ax_state, 'on'); box(ax_state, 'on');
     
-    % Convert angles
-    if state_idx == 5 || state_idx == 6
-        ideal_vals = rad2deg(state_data.clean(:, state_idx));
-        real_vals = rad2deg(state_data.real(:, state_idx));
-        ekf_vals = rad2deg(state_data.estimate(:, state_idx));
-    else
-        ideal_vals = state_data.clean(:, state_idx);
-        real_vals = state_data.real(:, state_idx);
-        ekf_vals = state_data.estimate(:, state_idx);
-    end
+    if idx >= 5, conv = @rad2deg; else, conv = @(x) x; end
     
-    % === PLOT WITH 70% THICKER RED LINES ===
-    % 1. Ideal values (subtle gray dots)
-    plot(ax_state, time(1:20:end), ideal_vals(1:20:end), '.', ...
-         'Color', [0.5 0.5 0.5], 'MarkerSize', 6, 'DisplayName', 'Ideal');
+    h1 = plot(ax_state, time(1:20:end), conv(state_data.clean(1:20:end, idx)), '.', ...
+         'Color', [0.5 0.5 0.5], 'MarkerSize', 5, 'DisplayName', 'Ideal');
+    h2 = plot(ax_state, time, conv(state_data.real(:, idx)), '-', ...
+         'Color', [0.85 0.2 0.2], 'LineWidth', red_lw, 'DisplayName', 'Real');
+    h3 = plot(ax_state, time, conv(state_data.estimate(:, idx)), '-', ...
+         'Color', [0.2 0.3 0.9], 'LineWidth', blue_lw, 'DisplayName', 'EKF');
+         
+    if idx == 1, plot_handles = [h1, h2, h3]; end
     
-    % 2. Real values (RED - 70% THICKER THAN BLUE)
-    plot(ax_state, time, real_vals, '-', ...
-         'Color', [0.85 0.2 0.2], 'LineWidth', red_line_width, ...  % 3.4 (70% thicker)
-         'DisplayName', 'Real State');
-    
-    % 3. EKF estimate (BLUE - baseline thickness)
-    plot(ax_state, time, ekf_vals, '-', ...
-         'Color', [0.2 0.3 0.9], 'LineWidth', blue_line_width, ...  % 2.0
-         'DisplayName', 'EKF Estimate');
-    
-    % Labels
-    xlabel(ax_state, 'Time (s)', 'FontSize', 9);
-    ylabel(ax_state, state_config{state_idx, 1}{1}, 'FontSize', 9);
-    title(ax_state, state_config{state_idx, 1}{2}, ...
-          'FontWeight', 'bold', 'FontSize', 10);
-    
-    % Legend only on first
-    if state_idx == 1
-        legend(ax_state, {'Ideal', 'Real State', 'EKF Estimate'}, ...
-               'Location', 'best', 'FontSize', 8);
-    end
-    
+    ylabel(ax_state, state_config{idx, 1}{1}, 'FontSize', 8);
+    title(ax_state, state_config{idx, 1}{2}, 'FontWeight', 'bold', 'FontSize', 9);
     set(ax_state, 'GridAlpha', 0.3);
 end
 
-%% ================= 4. ERROR EVOLUTION PLOT =================
+% STATE PLOTS LEGEND -> PLACED INSIDE 'SOUTH' of ax_info
+% CHANGE: We shift the dummy axis position slightly DOWN so the legend
+% clears the text table.
+pos = get(ax_info, 'Position');
+pos(2) = pos(2) - 0.05; % Move bottom edge down by 5% of figure height
+ax_dummy = axes('Position', pos, 'Visible', 'off');
+
+hL_state = legend(ax_dummy, plot_handles, 'Orientation', 'horizontal', 'FontSize', 9, ...
+            'Location', 'south'); 
+set(hL_state, 'Box', 'off');
+title(hL_state, 'State Plots Legend');
+
+
+%% ================= 4. ERROR EVOLUTION PLOT (Bottom Right) =================
 ax_error = subplot(4, 4, [15 16]);
 hold(ax_error, 'on'); grid(ax_error, 'on'); box(ax_error, 'on');
 
-if exist('errors', 'var') && isfield(errors, 'states_real_VS_estimate') && isfield(errors, 'states_real_VS_running')
-    
-    % Prepare Kalman Errors
-    abs_errors_kalman = abs(errors.states_real_VS_estimate);
-    abs_errors_kalman(:,5) = rad2deg(abs_errors_kalman(:,5));
-    abs_errors_kalman(:,6) = rad2deg(abs_errors_kalman(:,6));
-    
-    % Prepare Running Mean Errors
-    abs_errors_running = abs(errors.states_real_VS_running);
-    abs_errors_running(:,5) = rad2deg(abs_errors_running(:,5));
-    abs_errors_running(:,6) = rad2deg(abs_errors_running(:,6));
+if exist('errors', 'var') && isfield(errors, 'states_real_VS_estimate')
+    % Data Prep
+    err_k = abs(errors.states_real_VS_estimate);
+    err_k(:,5:6) = rad2deg(err_k(:,5:6));
+    err_r = abs(errors.states_real_VS_running);
+    err_r(:,5:6) = rad2deg(err_r(:,5:6));
     
     colors = lines(6);
-    state_names = {'x', 'dx', 'y', 'dy', 'θ', 'dθ'};
-    
-    % Clear axes to prevent overplotting previous runs
-    cla(ax_error);
-    hold(ax_error, 'on');
+    names = {'x', 'dx', 'y', 'dy', 'θ', 'dθ'};
+    max_y = 0;
     
     for i = 1:6
-        window = min(40, floor(length(time)/8));
+        w = min(40, floor(length(time)/8));
         
-        % Plot Kalman Filter (Solid Lines)
-        smooth_err_k = movmean(abs_errors_kalman(:, i), window);
-        plot(ax_error, time, smooth_err_k, ...
-             'Color', colors(i, :), 'LineWidth', 1.8, ...
-             'LineStyle', '-', ...
-             'DisplayName', [state_names{i} ' (Kalman)']);
+        % Plot Running (Dashed) - Plot FIRST so it appears in legend but stays behind if needed
+        % Now using DisplayName for legend visibility
+        plot(ax_error, time, movmean(err_r(:,i), w), '--', ...
+             'Color', colors(i,:), 'LineWidth', 1.0, ...
+             'DisplayName', [names{i} ' (Running Mean)']);
              
-        % Plot Running Mean Filter (Dashed Lines)
-        smooth_err_r = movmean(abs_errors_running(:, i), window);
-        plot(ax_error, time, smooth_err_r, ...
-             'Color', colors(i, :), 'LineWidth', 1.5, ...
-             'LineStyle', '--', ...
-             'DisplayName', [state_names{i} ' (Running)']);
+        % Plot EKF (Solid)
+        ekf_line = movmean(err_k(:,i), w);
+        max_y = max(max_y, max(ekf_line));
+        plot(ax_error, time, ekf_line, '-', ...
+             'Color', colors(i,:), 'LineWidth', 1.5, ...
+             'DisplayName', [names{i} ' (EKF)']);
     end
     
-    xlabel(ax_error, 'Time (s)', 'FontSize', 10);
-    ylabel(ax_error, 'Absolute Error', 'FontSize', 10);
-    title(ax_error, 'Error Comparison: Kalman (Solid) vs Running (Dashed)', 'FontWeight', 'bold', 'FontSize', 11);
+    if max_y > 0, ylim(ax_error, [0, max_y * 1.3]); end
+    xlabel(ax_error, 'Time (s)', 'FontSize', 9);
+    ylabel(ax_error, 'Abs Error', 'FontSize', 9);
+    title(ax_error, 'Estimation Errors', 'FontWeight', 'bold', 'FontSize', 10);
     
-    % Adjust legend to handle the increased number of entries
-    legend(ax_error, 'Location', 'best', 'FontSize', 7, 'NumColumns', 4);
-    
-    plot(ax_error, [time(1) time(end)], [0 0], 'k:', ...
-         'LineWidth', 0.5, 'HandleVisibility', 'off');
-    
-    grid(ax_error, 'on');
+    % ERROR LEGEND -> CHANGE: Moved to 'eastoutside' to prevent overlap
+    legend(ax_error, 'Location', 'eastoutside', 'FontSize', 8, 'Box', 'on');
 else
-    text(ax_error, 0.5, 0.5, 'Error data not available', ...
-         'HorizontalAlignment', 'center', 'VerticalAlignment', 'middle');
+    text(0.5, 0.5, 'No Data', 'Parent', ax_error, 'HorizontalAlignment', 'center');
     axis(ax_error, 'off');
 end
 
-%% ================= FINAL TOUCHES =================
-% Main title
-sgtitle({'Planar Quadrotor: Final State Estimation Results', ...
-         sprintf('Clean visualization', ...
-                 red_line_width/blue_line_width)}, ...
-        'FontSize', 14, 'FontWeight', 'bold');
-
-% Clean annotation
-annotation('textbox', [0.02, 0.02, 0.2, 0.04], ...
-           'String', {'Final Visualization', ...
-                     sprintf('Generated: %s', datestr(now))}, ...
-           'FontSize', 8, 'FontWeight', 'bold', ...
-           'EdgeColor', 'none', 'BackgroundColor', 'none', ...
-           'FitBoxToText', 'on');
-
-drawnow;
-
-% Console summary
-if exist('errors', 'var') && isfield(errors, 'rmse_states')
-    fprintf('\n=== FINAL VISUALIZATION SUMMARY ===\n');
-    fprintf('Trajectory: Clean, no orientation key clutter\n');
-    fprintf('State plots: \n', ...
-            red_line_width/blue_line_width);
-    fprintf('Start marker: Cyan (not green)\n');
-    fprintf('Line thickness: Red = %.1f, Blue = %.1f\n', ...
-            red_line_width, blue_line_width);
-    fprintf('==================================\n');
-end
+sgtitle('Planar Quadrotor: Final State Estimation Results', 'FontSize', 14, 'FontWeight', 'bold');
 end

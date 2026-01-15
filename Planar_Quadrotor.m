@@ -2,7 +2,7 @@ clc;
 clear; 
 close all;
 
-rng(45);
+rng(47);
 
 %% DEFINE VARIABLES
 m = 0.5;         % mass [kg] 
@@ -124,16 +124,12 @@ noise_data.output_noise_amp = 0.02;
 
 %% STEP 7: SIMULATION
 
-[states, output, error] = simulation_quadrotor(rotor_data, control_input.roll, noise_data, time, initial_state.roll);
+[states, output, error] = simulation_quadrotor(rotor_data, control_input.horizontal, noise_data, time, initial_state.horizontal);
 %% plot_quadrotor_results(time, states, output, C, error);
 
 plot_quadrotor_enhanced(time, states, output, C, error);
 
-%%merry_christmas_quadrotor();
-
-[rmse_mat, noise_mat, div_data] = robustness(rotor_data, control_input.roll, time, initial_state.roll);
+[rmse_mat, noise_mat, div_data, rmse_running] = robustness(rotor_data, control_input.horizontal, time, initial_state.horizontal);
 
 plot_robustness_results(rmse_mat, noise_mat, div_data);
 
-%%plot_quadrotor_3D(time, states, output, C, error);
-%%plot_quadrotor_3D_physical(time, states, output, C, error);

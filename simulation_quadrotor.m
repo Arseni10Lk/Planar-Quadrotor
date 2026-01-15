@@ -171,7 +171,7 @@ for t = 2:length(time)
     delta_x_running(2) = (-sin(theta_running)*(control_input(t, 1)+control_input(t, 2))/m) * dt;
     delta_x_running(4) = (cos(theta_running)*(control_input(t, 1)+control_input(t, 2))/m - g) * dt;
 
-    state.running(t, :) = state.running(t - 1, :) + delta_x_running(:)' + state_noise;
+    state.running(t, :) = state.running(t - 1, :) + delta_x_running(:)';
     
 end
 
