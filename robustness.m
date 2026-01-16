@@ -67,7 +67,7 @@ function div_data = find_divergence_individual_states(rotor_data, control_input,
     end
     
     % Thresholds (Shared between filters)
-    thresholds = [5.0, 1.0, 0.5, 0.2, 0.5, 0.3];  
+    thresholds = [5.0, 1.0, 0.2, 0.2, 0.2, 0.1];  
     for i = 1:6
         div_data.(['threshold_' state_names{i}]) = thresholds(i);
     end

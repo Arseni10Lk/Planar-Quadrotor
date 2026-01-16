@@ -114,11 +114,10 @@ noise_data.output_noise_amp = 0.01;
 
 %% STEP 7: SIMULATION
 
-[states, output, error] = simulation_quadrotor(rotor_data, control_input.horizontal, noise_data, time, initial_state.horizontal);
-%% plot_quadrotor_results(time, states, output, C, error);
+[states, output, error] = simulation_quadrotor(rotor_data, control_input.roll, noise_data, time, initial_state.roll);
 
 plot_quadrotor_enhanced(time, states, output, C, error);
 
-[rmse_mat, noise_mat, div_data, rmse_running] = robustness(rotor_data, control_input.horizontal, time, initial_state.horizontal, noise_data);
+[rmse_mat, noise_mat, div_data, rmse_running] = robustness(rotor_data, control_input.roll, time, initial_state.roll, noise_data);
 
 plot_robustness_results(rmse_mat, noise_mat, div_data);
