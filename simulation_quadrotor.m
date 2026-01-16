@@ -157,21 +157,22 @@ for t = 2:length(time)
     output.running(t, :) = mean(output.real(window_start:t, :), 1);
     
     % update theta
-    theta_running = output.running(t - 1, 2);
+    theta_running = output.running(t, 2);
+    
+    state.running(t, 3) = output.running(t, 1); % Overwrite y (State 3)
+    state.running(t, 5) = output.running(t, 2); % Overwrite theta (State 5)
+    state.running(t, 6) = output.running(t, 3); % Overwrite theta_dot (State 6)
 
     % For the states, we apply the same averaging to the noisy running states
     % Update states based on linear dynamics, this works for everything
     % except dx and dy
-    delta_x_running(1) = mean(state.running(window_start:t-1, 2), 1) * dt;
-    delta_x_running(3) = mean(state.running(window_start:t-1, 4), 1) * dt;
-    delta_x_running(5) = mean(state.running(window_start:t-1, 6), 1) * dt;
-    delta_x_running(6) = (r / I * control_input(t, 1) - r / I * control_input(t, 2)) * dt;
+    delta_x_running(1) = state.running(t-1, 2) * dt;
 
     % Now, non-linear part
     delta_x_running(2) = (-sin(theta_running)*(control_input(t, 1)+control_input(t, 2))/m) * dt;
     delta_x_running(4) = (cos(theta_running)*(control_input(t, 1)+control_input(t, 2))/m - g) * dt;
 
-    state.running(t, :) = state.running(t - 1, :) + delta_x_running(:)';
+    state.running(t, [1 2 4]) = state.running(t - 1, [1 2 4]) + delta_x_running([1 2 4]);
     
 end
 

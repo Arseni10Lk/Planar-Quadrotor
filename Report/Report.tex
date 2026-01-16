@@ -197,8 +197,9 @@
 	
 	\section{Extended Kalman Filter Design}
 	
-	
 	The "default" Kalman filter addresses the general problem of trying to estimate the state of a discrete-time controlled process that is governed by a linear stochastic difference equation. A Kalman filter that linearizes about the current mean and covariance is referred to as an extended Kalman filter or EKF.
+	
+	The EKF is employed because the quadrotor system is nonlinear—motion is dependent on the sine and cosine of the angle $\theta$. The EKF linearizes the system at each time step using the current optimal estimate prior to applying standard Kalman update equations.
 	
 	The working principle of the filter is deciding how much to trust sensor measurements compared to the predicted values in accordance with the ideal mathematical model (fig. \ref{fig:ekfprinciple}).
 		
@@ -241,9 +242,7 @@
 		\frac{\partial \ddot{x}}{\partial \theta} = -\frac{\cos\theta}{m}(u_1 + u_2) \label{eq:partial_x} \\
 		\frac{\partial \ddot{y}}{\partial \theta} = -\frac{\sin\theta}{m}(u_1 + u_2) \label{eq:partial_y}
 	\end{align}
-	
-	
-	The EKF is employed because the quadrotor system is nonlinear—motion is dependent on the sine and cosine of the angle $\theta$. The EKF linearizes the system at each time step using the current optimal estimate prior to applying standard Kalman update equations.
+
 	
 	The resulting Jacobian $A$ is:
 	
@@ -271,7 +270,7 @@
 		\end{bmatrix}
 	\end{equation}
 	
-	The measurement matrix $H$ (or $C$) is defined as:
+	The measurement matrix $H$ (referred to as $C$ in code) is defined as:
 	
 	\begin{equation}
 		H = C = \begin{bmatrix}
@@ -281,15 +280,16 @@
 		\end{bmatrix}
 	\end{equation}
 	
-	The implementation follows a standard \textbf{predict–correct cycle}, executing in real-time within the simulation loop.
+	The implementation follows a standard \textbf{predict–correct cycle} (fig. \ref{fig:ekfprinciple}), executing in real-time within the simulation loop.
 	
 	\subsection{Prediction Step}
-	The next state is predicted utilizing true nonlinear physics rather than a linear approximation. This estimate is stored as \texttt{state.estimate}, ensuring the prediction respects actual dynamics.
 	
+	First, the states are updated, and the estimate is stored as \texttt{state.estimate}.
+		
 	Following the state acquisition for the current timestep, the $F$ matrix is updated based on the current angle (\texttt{theta\_estimate}) and thrust (\texttt{control\_input}). This dependency characterizes the Extended Kalman Filter. The error covariance is then predicted:
 	
 	\begin{equation}
-		P_{\text{prediction}} = F P F^T + Q
+		P_k^- = A_k P_{k-1} A_k^T + W_k Q_{k-1} W_k^T 
 	\end{equation}
 	
 	where $Q = \text{eye}(6) \times 10^{-5}$ represents the confidence in the physics model.
@@ -302,10 +302,9 @@
 	\end{lstlisting}
 	
 	The Kalman gain $K$ is calculated to determine the weighting between sensor data and physics predictions:
-	
 	\begin{align}
-		S &= C P_{\text{prediction}} C^T + R \\
-		K &= P_{\text{prediction}} C^T S^{-1}
+		S &= C P_k^- C^T + R \\
+		K &= P_k^- C^T S^{-1}
 	\end{align}
 	
 	Here, $R = \text{eye}(3) \times 10^{-1}$ is set larger than $Q$, indicating greater confidence in the physics model compared to the noisy sensors. Finally, the state and covariance are updated:
@@ -315,7 +314,8 @@
 	P = (eye(6) - K * C) * P_prediction;
 	\end{lstlisting}
 	
-	This process yields a smoother, more accurate estimate than raw sensor data alone.
+	\section{Running Mean Filter}
+	
 	
 	\section{MATLAB Implementation Breakdown}
 	
