@@ -292,7 +292,7 @@
 		P_k^- = A_k P_{k-1} A_k^T + W_k Q_{k-1} W_k^T 
 	\end{equation}
 	
-	where $Q = \text{eye}(6) \times 10^{-5}$ represents the confidence in the physics model.
+	where $Q$ represents the confidence in the physics model.
 	
 	\subsection{Correction Step}
 	The estimate is subsequently corrected using the latest noisy sensor data (\texttt{output.real}). The measurement residual—the discrepancy between sensor readings and predictions—is computed:
@@ -307,7 +307,9 @@
 		K &= P_k^- C^T S^{-1}
 	\end{align}
 	
-	Here, $R = \text{eye}(3) \times 10^{-1}$ is set larger than $Q$, indicating greater confidence in the physics model compared to the noisy sensors. Finally, the state and covariance are updated:
+	Process noise covariance Q and measurement noise covariance R were defined as functions of noise amplitude. Normally, such data would not be accessible, but since an attempt to test EKF's capabilities is made, such decision is appropriate.
+	
+	Finally, the state and covariance are updated:
 	
 	\begin{lstlisting}[style=Matlab-editor]
 	state.estimate(t,:) = state.estimate(t,:) + (K * measurement_residual)';
@@ -316,17 +318,44 @@
 	
 	\section{Running Mean Filter}
 	
-	
-	\section{MATLAB Implementation Breakdown}
-	
-	The implementation is structured into three primary components:
-	
-	\subsection{Main Script (Planar\_Quadrotor.m)}
-	This script defines the system parameters, invokes the simulation function, and generates final plots:
+	In order to compare the performance of the EKF, the running mean filter was implemented. With the window size of 10, it simply averages the values from the last 10 time steps when processing sensor measurements. It then uses this data, to predict the change in states.
 	
 	\begin{lstlisting}[style=Matlab-editor]
-	[state, output, errors] = simulation_quadrotor(rotor_data, control_input, noise_data, time, x0);
-	plot_quadrotor_results(time, state, output, rotor_data.C, errors);
+	% Determine the start of the window
+	window_start = max(1, t - window_size);
+	
+	% Average the noisy measurements ('real' outputs) over the window
+	output.running(t, :) = mean(output.real(window_start:t, :), 1);
+	
+	% update theta
+	theta_running = output.running(t, 2);
+	
+	state.running(t, 3) = output.running(t, 1); % Overwrite y (State 3)
+	state.running(t, 5) = output.running(t, 2); % Overwrite theta (State 5)
+	state.running(t, 6) = output.running(t, 3); % Overwrite theta_dot (State 6)
+	
+	% For the states, we apply the same averaging to the noisy running states
+	% Update states based on linear dynamics, this works for everything
+	% except dx and dy
+	delta_x_running(1) = state.running(t-1, 2) * dt;
+	
+	% Now, non-linear part
+	delta_x_running(2) = (-sin(theta_running)*(control_input(t, 1)+control_input(t, 2))/m) * dt;
+	delta_x_running(4) = (cos(theta_running)*(control_input(t, 1)+control_input(t, 2))/m - g) * dt;
+	
+	state.running(t, [1 2 4]) = state.running(t - 1, [1 2 4]) + delta_x_running([1 2 4]);
+\end{lstlisting}
+
+\section{MATLAB Implementation Breakdown}
+
+The implementation is structured into three primary components:
+
+\subsection{Main Script (Planar\_Quadrotor.m)}
+This script defines the system parameters, invokes the simulation function, and generates final plots:
+
+\begin{lstlisting}[style=Matlab-editor]
+[state, output, errors] = simulation_quadrotor(rotor_data, control_input, noise_data, time, x0);
+plot_quadrotor_results(time, state, output, rotor_data.C, errors);
 	\end{lstlisting}
 	
 	\subsection{Core Simulation (simulation\_quadrotor.m)}

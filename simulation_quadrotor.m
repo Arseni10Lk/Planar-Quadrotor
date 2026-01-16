@@ -44,10 +44,10 @@ output.running(1, :) = output.clean(1, :);%RUNNING
 P = eye(6); % Initial Uncertainty
 % Q: Process Noise Covariance (Trust in Physics)
 % We use a small value to allow the model to drive the smoothness
-Q = eye(6) * 1e-5; 
+Q = eye(6) * (noise_data.state_noise_amp^2); 
 % R: Measurement Noise Covariance (Trust in Sensors)
 % We set this higher than actual noise to filter out the jitters
-R = eye(3) * 1e-1;
+R = eye(3) * (noise_data.output_noise_amp^2);
 
 % Running 
 window_size = 10; % You can adjust this window size
