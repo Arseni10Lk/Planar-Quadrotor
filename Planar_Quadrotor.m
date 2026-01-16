@@ -84,7 +84,7 @@ for t = 200:299 % let it roll
 end 
 for t = 300:500 % stop rotation
     CU5(t + 1) = u1 * 0 * (1 + 0.001*cos(2 * 0.01 * t));
-    CU6(t + 1) = u2 * 0.08 * (1 + 0.001*sin(2 * 0.01 * t));
+    CU6(t + 1) = u2 * 0.008 * (1 + 0.001*sin(2 * 0.01 * t));
 end
 for t = 501:length(time) % recover vertically
     CU5(t + 1) = u1 * (1 + 0.001*cos(2 * 0.01 * t));
@@ -92,8 +92,8 @@ for t = 501:length(time) % recover vertically
 end 
 
 % Create CU7 and CU8 (straight fall recovery)
-CU7 = u1 * 0.64 * (1 + 0.001*cos(2*time));
-CU8 = u2 * 0.64 * (1 + 0.001*sin(2*time));
+CU7 = u1 * 0.54 * (1 + 0.001*cos(2*time));
+CU8 = u2 * 0.54 * (1 + 0.001*sin(2*time));
 
 % Combine for sim
 control_input.basic = [CU1; CU2]';
@@ -114,10 +114,10 @@ noise_data.output_noise_amp = 0.01;
 
 %% STEP 7: SIMULATION
 
-[states, output, error] = simulation_quadrotor(rotor_data, control_input.roll, noise_data, time, initial_state.roll);
+[states, output, error] = simulation_quadrotor(rotor_data, control_input.fall, noise_data, time, initial_state.fall);
 
 plot_quadrotor_enhanced(time, states, output, C, error);
 
-[rmse_mat, noise_mat, div_data, rmse_running] = robustness(rotor_data, control_input.roll, time, initial_state.roll, noise_data);
+[rmse_mat, noise_mat, div_data, rmse_running] = robustness(rotor_data, control_input.fall, time, initial_state.fall, noise_data);
 
 plot_robustness_results(rmse_mat, noise_mat, div_data);
