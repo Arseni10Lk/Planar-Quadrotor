@@ -41,9 +41,9 @@ codegen/
 
 # LaTex
 *.aux
-*.bbl
 *.bcf
 *.blg
+*.bbl
 *.log
 *.pdf
 *.run.xml
