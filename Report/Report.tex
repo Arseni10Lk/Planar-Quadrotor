@@ -161,37 +161,33 @@
 	\begin{figure}
 		\centering
 		\includegraphics[width=1\linewidth]{ASI_EKFprinciple}
-		\caption{A complete picture of the operation of the extended Kalman filter\autocite{welch2002kalman}.}
+		\caption{A complete picture of the operation of the extended Kalman filter. Source: \cite{welch2002kalman}.}
 		\label{fig:ekfprinciple}
 	\end{figure}
 	
 	
 	\subsection{Jacobian for Covariance Propagation}
 	
-	\noindent To estimate a process with non-linear difference and measurement relationships, it is possible to begin by writing new governing equations that linearize an estimate about the point k,
+	
+	\noindent To estimate a process with non-linear difference and measurement relationships,the system is modeled using non-linear functions $f$ and $h$ \autocite{welch2002kalman}:
 	\begin{align}
-		x_k &\approx \tilde{x}_k + A(x_{k-1} - \hat{x}_{k-1}) + w_{k-1}, \label{eq:x_k}\\
-		z_k &\approx \tilde{z}_k + H(x_k - \tilde{x}_k) + v_k \label{eq:z_k}
+		\mathbf{x}_{k+1} &= f(\mathbf{x}_k, \mathbf{u}_k) + \mathbf{w}_k \label{eq:state_nonlinear} \\
+		\mathbf{z}_k &= h(\mathbf{x}_k) + \mathbf{v}_k \label{eq:meas_nonlinear}
 	\end{align}
-	where
+	where:
 	\begin{itemize}
-		\item $x_k$ and $z_k$ are the actual state and measurement vectors,
-		\item $\tilde{x}_k$ and $\tilde{z}_k$ are the approximate state and measurement vectors
-		\item $\hat{x}_k$ is an \textit{aposteriori} estimate of the state at step $k$,
-		\item the random variables $w_k$ and $v_k$ represent the process and measurement noise
-		\item $A$ is the Jacobian matrix of partial derivatives of $f$ with respect to $x$, that is
-		\[
-		A_{[i, j]} = \frac{\partial f_{[i]}}{\partial x_{[j]}}(\hat{x}_{k-1}, u_k, 0),
-		\]
-		\item $H$ is the Jacobian matrix of partial derivatives of $h$ with respect to $x$,
-		\[
-		H_{[i, j]} = \frac{\partial h_{[i]}}{\partial x_{[j]}}(\tilde{x}_k, 0),
-		\]
+		\item $\mathbf{x}_k$ is the state vector at time step $k$,
+		\item $\mathbf{z}_k$ is the measurement vector,
+		\item $\mathbf{u}_k$ is the control input vector,
+		\item $\mathbf{w}_k$ and $\mathbf{v}_k$ are the process and measurement noise vectors.
 	\end{itemize}
 	
-	
-	The Extended Kalman Filter propagates uncertainty (covariance) by requiring a local linear approximation of the nonlinear dynamics in the form of matrices $A$ and $H$.
-	
+	\noindent To linearize the estimate for covariance propagation, the Jacobian matrices $\mathbf{F}$ and $\mathbf{H}$ have to be computed:
+	\begin{itemize}
+		\item $\mathbf{F}_{k}$ is the Jacobian of the dynamics function $f$ with respect to the state $\mathbf{x}$, evaluated at the previous estimate $\hat{\mathbf{x}}_{k-1|k-1}:[\mathbf{F}_{k} = \left. \frac{\partial f}{\partial \mathbf{x}} \right|{\hat{\mathbf{x}}_{k-1|k-1}, \mathbf{u}_k}]$
+		\item $\mathbf{H}_{k}$ is the Jacobian of the measurement function $h$ with respect to the state $\mathbf{x}$, evaluated at the predicted state $\hat{\mathbf{x}}_{k|k-1}:[\mathbf{H}_{k} = \left. \frac{\partial h}{\partial \mathbf{x}} \right|{\hat{\mathbf{x}}_{k|k-1}}]$
+	\end{itemize}
+		
 	To update the error covariance, the state transition Jacobian $A$ is derived from the partial derivatives of the dynamics, which are defined by equations \ref{eq:x_dyn} - \ref{eq:theta_dyn}:
 	\begin{align}
 		\frac{\partial \ddot{x}}{\partial \theta} = -\frac{\cos\theta}{m}(u_1 + u_2) \label{eq:partial_x} \\
