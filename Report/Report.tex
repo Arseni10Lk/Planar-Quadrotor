@@ -134,12 +134,7 @@
 	
 	\section{Real-World Trajectory}
 	
-	The real-world trajectory (\texttt{state.real}) differs from the perfect trajectory solely through the introduction of process and measurement noise. Gaussian noise is utilized, with amplitudes selected as follows:
-	
-	\begin{lstlisting}[style=myMatlabStyle]
-	noise_data.state_noise_amp = 0.003;
-	noise_data.output_noise_amp = 0.01;
-	\end{lstlisting}
+	The real-world trajectory (\texttt{state.real}) differs from the perfect trajectory solely through the introduction of process and measurement noise. It is assumed that both process and measurement noise follow a \textbf{Gaussian} distribution, which is implemented in the simulation using the MATLAB function \texttt{randn}. The stochastic properties are defined by their variances: the process noise variance is set to $0.003^2$, while the measurement noise variance is set to $0.01^2$.
 	
 	The governing equations \ref{eq:x_dyn}-\ref{eq:theta_dyn} remain unchanged, with noise injected during the state update step. The true state evolution is modeled by adding a stochastic process noise vector $\mathbf{w}$ to the deterministic dynamics:
 	\begin{equation}
@@ -260,7 +255,7 @@
 		K &= P_k^- C^T S^{-1}
 	\end{align}
 	
-	Process noise covariance Q and measurement noise covariance R were defined as functions of noise amplitude. Normally, such data would not be accessible, but since an attempt to test EKF's capabilities is made, such decision is appropriate.
+	Process noise covariance Q and measurement noise covariance R were defined as $I \times 0.003^2$ and $I \times 0.01^2$, respectively. This effectively means that the filter is "perfectly tuned."
 	
 	Finally, the state and covariance matrices are updated to obtain the a posteriori estimates. The state estimate is corrected by adding the measurement residual, weighted by the Kalman gain $K$:
 	\begin{equation}
