@@ -152,7 +152,7 @@
 	
 	\section{Extended Kalman Filter Design}
 	
-	The "default" Kalman filter addresses the general problem of trying to estimate the state of a discrete-time controlled process that is governed by a linear stochastic difference equation. A Kalman filter that linearizes about the current mean and covariance is referred to as an extended Kalman filter or EKF.
+	The Linear Kalman filter addresses the general problem of trying to estimate the state of a discrete-time controlled process that is governed by a linear stochastic difference equation. A Kalman filter that linearizes about the current mean and covariance is referred to as an extended Kalman filter or EKF.
 	
 	The EKF is employed because the quadrotor system is nonlinear—motion is dependent on the sine and cosine of the angle $\theta$. The EKF linearizes the system at each time step using the current optimal estimate prior to applying standard Kalman update equations.
 	
