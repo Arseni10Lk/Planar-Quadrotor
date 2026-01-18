@@ -173,19 +173,6 @@ for idx = 1:6
     set(ax_state, 'GridAlpha', 0.3);
 end
 
-% STATE PLOTS LEGEND -> PLACED INSIDE 'SOUTH' of ax_info
-% CHANGE: We shift the dummy axis position slightly DOWN so the legend
-% clears the text table.
-pos = get(ax_info, 'Position');
-pos(2) = pos(2) - 0.05; % Move bottom edge down by 5% of figure height
-ax_dummy = axes('Position', pos, 'Visible', 'off');
-
-hL_state = legend(ax_dummy, plot_handles, 'Orientation', 'horizontal', 'FontSize', 9, ...
-            'Location', 'south'); 
-set(hL_state, 'Box', 'off');
-title(hL_state, 'State Plots Legend');
-
-
 %% ================= 4. ERROR EVOLUTION PLOT (Bottom Right) =================
 ax_error = subplot(4, 4, [15 16]);
 hold(ax_error, 'on'); grid(ax_error, 'on'); box(ax_error, 'on');
