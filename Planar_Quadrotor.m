@@ -121,3 +121,7 @@ plot_quadrotor_enhanced(time, states, output, C, error);
 [rmse_mat, noise_mat, div_data, rmse_running] = robustness(rotor_data, control_input.fall, time, initial_state.fall, noise_data);
 
 plot_robustness_results(rmse_mat, noise_mat, div_data);
+
+plot_robustness_separate_windows(rmse_mat, noise_mat, div_data);
+
+plot_quadrotor_separate_windows(time, states, output, C, error);
