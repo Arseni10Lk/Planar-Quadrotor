@@ -1,4 +1,4 @@
-function plot_quadrotor_separate_windows_exact(time, state_data, output_data, C, errors)
+function plot_quadrotor_separate_windows(time, state_data, output_data, errors)
 % PLOT_QUADROTOR_SEPARATE_WINDOWS_EXACT - Creates exact copies of each quadrotor plot in separate windows
 % Each figure contains the EXACT same content as the original subplots, WITHOUT ideal lines
 
@@ -86,51 +86,6 @@ y_margin = bar_length * 0.8;
 xlim(ax_traj, [min(state_data.estimate(:,1))-x_margin, max(state_data.estimate(:,1))+x_margin]);
 ylim(ax_traj, [min(state_data.estimate(:,3))-y_margin, max(state_data.estimate(:,3))+y_margin]);
 
-%% 2. RMSE INFORMATION TABLE - EXACT copy of ax_info
-fprintf('Creating Figure 2: RMSE Information Table...\n');
-fig2 = figure('Name','RMSE Information Table',...
-              'NumberTitle','off',...
-              'Position',[100, 100, 500, 350],...
-              'Color','white');
-
-axis off;
-
-if exist('errors', 'var') && isfield(errors, 'rmse_states')
-    rmse_text = {'RMSE Values:', '----------------'};
-    
-    state_labels = {'x (Pos):   ', 'dx(Vel):  ', ' y (Pos):  ',...
-                    'dy(Vel):  ', ' θ (Ang):  ', 'dθ(Rate): '};
-    
-    for i = 1:6
-        if i <= 4
-            val = errors.rmse_states(i);
-            unit = 'm';
-            if mod(i,2) == 0
-                unit = 'm/s';
-            end
-        else
-            val = rad2deg(errors.rmse_states(i));
-            unit = 'deg';
-            if i == 6
-                unit = 'deg/s';
-            end
-        end
-        rmse_text{end+1} = sprintf('%s%7.4f %s', state_labels{i}, val, unit);
-    end
-else
-    rmse_text = {'No RMSE data'};
-end
-
-% Draw text in the MIDDLE (y=0.5) to avoid overlapping with top/bottom legends
-text(0.5, 0.5, rmse_text, ...
-     'FontName', 'FixedWidth', 'FontSize', 9, ...
-     'HorizontalAlignment', 'center', ...
-     'VerticalAlignment', 'middle', ...
-     'BackgroundColor', [0.98 0.98 0.98], ...
-     'EdgeColor', [0.9 0.9 0.9], 'Margin', 6);
-
-title('RMSE Information', 'FontWeight', 'bold', 'FontSize', 11);
-
 %% 3. INDIVIDUAL STATE PLOTS - 6 Separate Windows (EXACT copies, WITHOUT ideal)
 fprintf('Creating Figures 3-8: Individual State Plots...\n');
 
@@ -180,26 +135,6 @@ for idx = 1:6
     set(ax_state,'GridAlpha',0.3);
     legend([h_real, h_ekf], {'Real', 'EKF'}, 'Location', 'best', 'FontSize', 9);
 end
-
-%% 4. STATE PLOTS LEGEND - Separate Window (optional)
-fprintf('Creating Figure 9: State Plots Legend...\n');
-fig_legend = figure('Name','State Plots Legend',...
-                    'NumberTitle','off',...
-                    'Position',[600, 600, 450, 250],...  % Increased size
-                    'Color','white');
-
-axis off;
-
-legend_text = {'State Plots Legend:',...
-               '-------------------',...
-               '• Real: Red solid line',...
-               '• EKF Estimate: Blue solid line',...
-               '',...
-               'Note: Ideal (grey dotted) line',...
-               'has been removed as requested.'};
-
-text(0.1, 0.8, legend_text, 'FontSize', 11, 'VerticalAlignment', 'top',...
-     'FontWeight', 'bold');
 
 %% 5. ERROR EVOLUTION PLOT - EXACT copy of ax_error
 fprintf('Creating Figure 10: Estimation Errors...\n');

@@ -1,4 +1,4 @@
-function plot_robustness_separate_windows_exact(rmse_matrix, noise_matrix, divergence_data)
+function plot_robustness_separate_windows(rmse_matrix, noise_matrix, divergence_data)
 % PLOT_ROBUSTNESS_SEPARATE_WINDOWS_EXACT - Creates exact copies of each robustness plot in separate windows
 % Each figure contains the EXACT same content as the original subplots
 
@@ -430,95 +430,7 @@ if ~isempty(divergence_data.multipliers) && ~isempty(divergence_data.rmse_values
 end
 
 %% 5. INDIVIDUAL STATE DIVERGENCE PLOTS - Split by graph type
-fprintf('Creating Figure 5: Individual State Divergence Analysis...\n');
-plot_individual_state_divergence(divergence_data, 'x_dx');  % For x and dx states
-plot_individual_state_divergence(divergence_data, 'y_dy_theta_dtheta');  % For y, dy, θ, dθ states
 
 fprintf('Created 6 separate figures for robustness analysis.\n');
 drawnow;
-end
-
-%% Helper function for individual state divergence plots
-function plot_individual_state_divergence(divergence_data, state_group)
-% Create separate tables for each group of states
-
-if ~isfield(divergence_data, 'state_names')
-    return;
-end
-
-switch state_group
-    case 'x_dx'
-        state_indices = [1, 2];
-        fig_name = 'Divergence Analysis: x and dx States';
-        state_display_names = {'x', 'dx'};
-        
-    case 'y_dy_theta_dtheta'
-        state_indices = [3, 4, 5, 6];
-        fig_name = 'Divergence Analysis: y, dy, θ, dθ States';
-        state_display_names = {'y', 'dy', 'θ', 'dθ'};
-        
-    otherwise
-        return;
-end
-
-fig = figure('Name', fig_name,...
-             'NumberTitle','off',...
-             'Position',[300, 300, 650, 350],...
-             'Color','white');
-
-axis off;
-
-max_tested = max(divergence_data.multipliers);
-
-summary = {sprintf('DIVERGENCE ANALYSIS: %s', fig_name)};
-summary{end+1} = '===============================================';
-summary{end+1} = '';
-summary{end+1} = 'State   EKF Status   EKF End(x)  |  Running Mean Status  Run End(x)';
-summary{end+1} = '------  ----------   ----------  |  -------------------  ----------';
-
-for i = 1:length(state_indices)
-    state_idx = state_indices(i);
-    data_state_name = divergence_data.state_names{state_idx};
-    div_field = ['div_point_' data_state_name];
-    act_div_field = ['actually_diverged_' data_state_name];
-    
-    if divergence_data.(act_div_field)
-        ekf_stat = 'DIVERGED'; 
-        ekf_val = divergence_data.(div_field);
-    else
-        ekf_stat = 'STABLE'; 
-        ekf_val = max_tested;
-    end
-    
-    div_field_run = ['div_point_running_' data_state_name];
-    act_div_field_run = ['actually_diverged_running_' data_state_name];
-    
-    if isfield(divergence_data, act_div_field_run)
-        if divergence_data.(act_div_field_run)
-            run_stat = 'DIVERGED'; 
-            run_val = divergence_data.(div_field_run);
-        else
-            run_stat = 'STABLE'; 
-            run_val = max_tested;
-        end
-    else
-        run_stat = 'N/A'; 
-        run_val = 0;
-    end
-    
-    summary{end+1} = sprintf('  %-4s    %-10s   %6.1fx    |    %-17s  %6.1fx',...
-                            state_display_names{i},...
-                            ekf_stat, ekf_val, run_stat, run_val);
-end
-
-summary{end+1} = '';
-summary{end+1} = sprintf('Testing Range: %.1f - %.1fx baseline noise',...
-                        min(divergence_data.multipliers), max_tested);
-
-text(0.05, 0.95, summary, 'FontName', 'FixedWidth', 'FontSize', 9,...
-     'VerticalAlignment', 'top',...
-     'BackgroundColor', [0.97 0.97 0.97],...
-     'EdgeColor', [0.8 0.8 0.8], 'LineWidth', 1);
-
-title(fig_name, 'FontWeight', 'bold', 'FontSize', 11);
 end
