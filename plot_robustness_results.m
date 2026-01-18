@@ -33,7 +33,7 @@ legend(ax1, {'Optimal', 'Regular', 'High', 'Very High'}, ...
 ax2 = subplot(3, 4, [3 4]);
 bar(ax2, noise_matrix);
 xlabel(ax2, 'Case', 'FontSize', 10, 'FontWeight', 'bold');
-ylabel(ax2, 'Noise Amplitude', 'FontSize', 10, 'FontWeight', 'bold');
+ylabel(ax2, 'Variance', 'FontSize', 10, 'FontWeight', 'bold');
 title(ax2, 'Noise Levels', 'FontSize', 11, 'FontWeight', 'bold');
 set(ax2, 'XTickLabel', {'Optimal', 'Regular', 'High', 'Very High'});
 grid(ax2, 'on');
@@ -359,30 +359,4 @@ else
     text(ax4, 0.5, 0.5, 'No divergence data', 'HorizontalAlignment', 'center'); axis(ax4, 'off');
 end
 
-%% ================= 5. SUMMARY TABLE (Same as before) =================
-ax5 = subplot(3, 4, [10 11]); axis(ax5, 'off');
-summary = {'DIVERGENCE SUMMARY: EKF vs Running Filter', '=========================================', ''};
-if isfield(divergence_data, 'state_names')
-    state_display_names = {'x', 'dx', 'y', 'dy', 'θ', 'dθ'};
-    max_tested = max(divergence_data.multipliers);
-    summary{end+1} = 'State    EKF Status     EKF End(x)   |   Running Mean Status     Run End(x)';
-    summary{end+1} = '------   -----------    ----------   |   -------------------    ----------';
-    for state_idx = 1:6
-        data_state_name = divergence_data.state_names{state_idx};
-        div_field = ['div_point_' data_state_name]; act_div_field = ['actually_diverged_' data_state_name];
-        if divergence_data.(act_div_field), ekf_stat = 'DIVERGED'; ekf_val = divergence_data.(div_field); else, ekf_stat = 'STABLE'; ekf_val = max_tested; end
-        div_field_run = ['div_point_running_' data_state_name]; act_div_field_run = ['actually_diverged_running_' data_state_name];
-        if isfield(divergence_data, act_div_field_run)
-            if divergence_data.(act_div_field_run), run_stat = 'DIVERGED'; run_val = divergence_data.(div_field_run); else, run_stat = 'STABLE'; run_val = max_tested; end
-        else, run_stat = 'N/A'; run_val = 0; end
-        summary{end+1} = sprintf('  %-4s   %-11s    %6.1fx    |   %-11s    %6.1fx', state_display_names{state_idx}, ekf_stat, ekf_val, run_stat, run_val);
-    end
-    summary{end+1} = ''; summary{end+1} = sprintf('Testing Range: %.1f - %.1fx baseline noise', min(divergence_data.multipliers), max_tested);
-else, summary{end+1} = 'No state divergence data available'; end
-text(0.05, 0.95, summary, 'FontName', 'FixedWidth', 'FontSize', 9, 'VerticalAlignment', 'top', 'BackgroundColor', [0.97 0.97 0.97], 'EdgeColor', [0.8 0.8 0.8], 'LineWidth', 1);
-title(ax5, 'State-by-State Divergence Analysis', 'FontWeight', 'bold', 'FontSize', 11);
-
-sgtitle('Extended Kalman Filter vs Running Mean: Robustness Analysis', 'FontSize', 14, 'FontWeight', 'bold');
-annotation('textbox', [0.02, 0.02, 0.2, 0.03], 'String', sprintf('Generated: %s', datestr(now)), 'FontSize', 8, 'EdgeColor', 'none', 'HorizontalAlignment', 'left');
-drawnow;
 end
