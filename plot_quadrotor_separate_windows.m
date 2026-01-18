@@ -113,7 +113,7 @@ blue_lw = 2.0;
 red_lw = 3.0;
 
 for idx = 1:6
-    fig_state = figure('Name', sprintf('State Plot: %s (%s)', state_config{idx}{2}, case_name),...
+    fig_state = figure('Name', sprintf('State Plot: %s', state_config{idx}{2}),...
                        'NumberTitle','off',...
                        'Position',[50+idx*60, 50+idx*60, 750, 550],...  % Increased size
                        'Color','white');
@@ -123,25 +123,64 @@ for idx = 1:6
     grid(ax_state,'on');
     box(ax_state,'on');
     
+    % Unit conversion function
     if idx >= 5
         conv = @rad2deg;
     else
         conv = @(x)x;
     end
     
-    % Only plot Real and EKF Estimate (EXACT from original)
+    % --- Determine if this state has noisy sensor data ---
+    % Mapping based on simulation_quadrotor.m:
+    % State 3 (y)      <-- Output 1
+    % State 5 (theta)  <-- Output 2
+    % State 6 (dtheta) <-- Output 3
+    
+    has_sensor = false;
+    sensor_col = 0;
+    
+    if idx == 3
+        has_sensor = true;
+        sensor_col = 1;
+    elseif idx == 5
+        has_sensor = true;
+        sensor_col = 2;
+    elseif idx == 6
+        has_sensor = true;
+        sensor_col = 3;
+    end
+    
+    % --- Plotting ---
+    
+    % 1. Plot Sensor Data (if available) - plotted first (behind lines) or as scatter
+    h_sens = [];
+    if has_sensor
+        % Extract noisy sensor data column and convert units if necessary
+        sensor_vals = output_data.real(:, sensor_col);
+        h_sens = plot(ax_state, time, conv(sensor_vals), '.', ...
+            'Color', [0.2 0.7 0.2], 'MarkerSize', 6, 'DisplayName', 'Sensor');
+    end
+
+    % 2. Plot Real State
     h_real = plot(ax_state, time, conv(state_data.real(:,idx)), '-', ...
              'Color', [0.85 0.2 0.2], 'LineWidth', red_lw, 'DisplayName', 'Real');
     
+    % 3. Plot EKF Estimate
     h_ekf = plot(ax_state, time, conv(state_data.estimate(:,idx)), '-', ...
              'Color', [0.2 0.3 0.9], 'LineWidth', blue_lw, 'DisplayName', 'EKF');
     
     ylabel(ax_state, state_config{idx}{1}, 'FontSize', 9);
-    title(ax_state, sprintf('%s - %s', state_config{idx}{2}, case_name), 'FontWeight', 'bold', 'FontSize', 10);
+    title(ax_state, state_config{idx}{2}, 'FontWeight', 'bold', 'FontSize', 10);
     xlabel('Time (s)', 'FontSize', 9);
     
     set(ax_state,'GridAlpha',0.3);
-    legend([h_real, h_ekf], {'Real', 'EKF'}, 'Location', 'best', 'FontSize', 9);
+    
+    % Update Legend based on whether sensor data exists
+    if has_sensor
+        legend([h_real, h_ekf, h_sens], {'Real', 'EKF', 'Sensor'}, 'Location', 'best', 'FontSize', 9);
+    else
+        legend([h_real, h_ekf], {'Real', 'EKF'}, 'Location', 'best', 'FontSize', 9);
+    end
 
     % SAVE FIGURE
     saveas(fig_state, fullfile(report_dir, sprintf('state_%s-%s.png', state_filenames{idx}, case_name)));
