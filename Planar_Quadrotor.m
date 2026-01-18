@@ -114,14 +114,18 @@ noise_data.output_noise_amp = 0.01;
 
 %% STEP 7: SIMULATION
 
-[states, output, error] = simulation_quadrotor(rotor_data, control_input.fall, noise_data, time, initial_state.fall);
+%% STEP 7: SIMULATION
 
-plot_quadrotor_enhanced(time, states, output, C, error);
+% Define the test case name here (e.g., 'fall', 'basic', 'roll', 'horizontal')
+current_case = 'fall'; 
 
-[rmse_mat, noise_mat, div_data, rmse_running] = robustness(rotor_data, control_input.fall, time, initial_state.fall, noise_data);
+[states, output, error] = simulation_quadrotor(rotor_data, control_input.(current_case), noise_data, time, initial_state.(current_case));
 
-plot_robustness_results(rmse_mat, noise_mat, div_data);
+% Run Robustness
+[rmse_mat, noise_mat, div_data, rmse_running] = robustness(rotor_data, control_input.(current_case), time, initial_state.(current_case), noise_data);
 
-plot_robustness_separate_windows(rmse_mat, noise_mat, div_data);
+% New functions with saving logic:
+% Pass 'current_case' to save files with that specific name
+plot_robustness_separate_windows(rmse_mat, noise_mat, div_data, current_case);
 
-plot_quadrotor_separate_windows(time, states, output, C, error);
+plot_quadrotor_separate_windows(time, states, output, C, error, current_case);

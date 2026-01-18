@@ -1,15 +1,22 @@
-function plot_robustness_separate_windows(rmse_matrix, noise_matrix, divergence_data)
-% PLOT_ROBUSTNESS_SEPARATE_WINDOWS_EXACT - Creates exact copies of each robustness plot in separate windows
+function plot_robustness_separate_windows(rmse_matrix, noise_matrix, divergence_data, case_name)
+% PLOT_ROBUSTNESS_SEPARATE_WINDOWS - Creates exact copies of each robustness plot in separate windows
 % Each figure contains the EXACT same content as the original subplots
+% SAVES figures to /Report folder with case_name suffix.
 
-fprintf('\n== Creating EXACT Separate Windows for Robustness Plots ===\n');
+fprintf('\n== Creating EXACT Separate Windows for Robustness Plots (%s) ===\n', case_name);
 
 % Force light theme
 set(0, 'DefaultFigureColor', 'white');
 
+% Create Report Directory
+report_dir = fullfile(pwd, 'Report');
+if ~exist(report_dir, 'dir')
+    mkdir(report_dir);
+end
+
 %% 1. RMSE BAR CHART (EKF Only) - EXACT copy of ax1 - FIXED VERSION
 fprintf('Creating Figure 1: EKF RMSE Across Noise Conditions...\n');
-fig1 = figure('Name','EKF RMSE Across Noise Conditions',...
+fig1 = figure('Name', sprintf('EKF RMSE Across Noise Conditions (%s)', case_name),...
               'NumberTitle','off',...
               'Position',[50, 50, 600, 450],...
               'Color','white');
@@ -20,15 +27,18 @@ fig1 = figure('Name','EKF RMSE Across Noise Conditions',...
 bar(rmse_matrix','grouped');  % TRANSPOSE to get correct orientation
 xlabel('State','FontSize',10,'FontWeight','bold');
 ylabel('RMSE (EKF)','FontSize',10,'FontWeight','bold');
-title('EKF RMSE Across Noise Conditions','FontSize',11,'FontWeight','bold');
+title(sprintf('EKF RMSE Across Noise Conditions - %s', case_name),'FontSize',11,'FontWeight','bold');
 set(gca,'XTickLabel',{'x','dx','y','dy','θ','dθ'});
 grid on;
 legend({'Optimal','Regular','High','Very High'},...
        'Location','northoutside','Orientation','horizontal','FontSize',8);
 
+% SAVE FIGURE
+saveas(fig1, fullfile(report_dir, sprintf('robustness_rmse-%s.png', case_name)));
+
 %% 2. NOISE LEVELS - EXACT copy of ax2
 fprintf('Creating Figure 2: Noise Levels...\n');
-fig2 = figure('Name','Noise Levels',...
+fig2 = figure('Name', sprintf('Noise Levels (%s)', case_name),...
               'NumberTitle','off',...
               'Position',[100, 100, 600, 450],...
               'Color','white');
@@ -37,16 +47,19 @@ fig2 = figure('Name','Noise Levels',...
 bar(noise_matrix);
 xlabel('Case','FontSize',10,'FontWeight','bold');
 ylabel('Noise Amplitude','FontSize',10,'FontWeight','bold');
-title('Noise Levels','FontSize',11,'FontWeight','bold');
+title(sprintf('Noise Levels - %s', case_name),'FontSize',11,'FontWeight','bold');
 set(gca,'XTickLabel',{'Optimal','Regular','High','Very High'});
 grid on;
 legend({'Process','Measurement'},...
        'Location','northoutside','Orientation','horizontal','FontSize',8);
 
+% SAVE FIGURE
+saveas(fig2, fullfile(report_dir, sprintf('noise_levels-%s.png', case_name)));
+
 %% 3. RMSE GROWTH FOR X AND DX (LOG SCALE) - EXACT copy of ax3
 if ~isempty(divergence_data.multipliers) && ~isempty(divergence_data.rmse_values)
     fprintf('Creating Figure 3: RMSE Growth for x and dx (Log Scale)...\n');
-    fig3 = figure('Name','RMSE Growth: x and dx (Log Scale)',...
+    fig3 = figure('Name', sprintf('RMSE Growth: x and dx (Log Scale) (%s)', case_name),...
                   'NumberTitle','off',...
                   'Position',[150, 150, 700, 550],...
                   'Color','white');
@@ -205,7 +218,7 @@ if ~isempty(divergence_data.multipliers) && ~isempty(divergence_data.rmse_values
     
     xlabel(ax3, 'Noise Multiplier (x baseline)', 'FontSize', 10, 'FontWeight', 'bold');
     ylabel(ax3, 'RMSE (log scale)', 'FontSize', 10, 'FontWeight', 'bold');
-    title(ax3, 'RMSE Growth: x and dx (Log Scale)', 'FontSize', 11, 'FontWeight', 'bold');
+    title(ax3, sprintf('RMSE Growth: x and dx (Log Scale) - %s', case_name), 'FontSize', 11, 'FontWeight', 'bold');
     
     if ~isempty(plot_handles_xdx)
         hL3 = legend(plot_handles_xdx, 'NumColumns', 1, 'FontSize', 8);
@@ -217,12 +230,15 @@ if ~isempty(divergence_data.multipliers) && ~isempty(divergence_data.rmse_values
     end
     grid(ax3, 'on'); grid(ax3, 'minor'); 
     ax3.MinorGridAlpha = 0.2; ax3.GridAlpha = 0.3;
+
+    % SAVE FIGURE
+    saveas(fig3, fullfile(report_dir, sprintf('rmse_growth_log-%s.png', case_name)));
 end
 
 %% 4. RMSE GROWTH FOR Y, DY, θ, dθ (LINEAR SCALE) - EXACT copy of ax4
 if ~isempty(divergence_data.multipliers) && ~isempty(divergence_data.rmse_values)
     fprintf('Creating Figure 4: RMSE Growth for y, dy, θ, dθ...\n');
-    fig4 = figure('Name','RMSE Growth: y, dy, θ, dθ',...
+    fig4 = figure('Name', sprintf('RMSE Growth: y, dy, θ, dθ (%s)', case_name),...
                   'NumberTitle','off',...
                   'Position',[200, 200, 800, 550],...
                   'Color','white');
@@ -417,7 +433,7 @@ if ~isempty(divergence_data.multipliers) && ~isempty(divergence_data.rmse_values
     
     xlabel(ax4, 'Noise Multiplier (x baseline)', 'FontSize', 10, 'FontWeight', 'bold');
     ylabel(ax4, 'RMSE', 'FontSize', 10, 'FontWeight', 'bold');
-    title(ax4, 'RMSE Growth: y, dy, θ, dθ', 'FontSize', 11, 'FontWeight', 'bold');
+    title(ax4, sprintf('RMSE Growth: y, dy, θ, dθ - %s', case_name), 'FontSize', 11, 'FontWeight', 'bold');
     
     if ~isempty(plot_handles_remaining)
         hL4 = legend(plot_handles_remaining, 'NumColumns', 2, 'FontSize', 7);
@@ -427,10 +443,11 @@ if ~isempty(divergence_data.multipliers) && ~isempty(divergence_data.rmse_values
     if ~isempty(x_all)
         xlim(ax4, [min(x_all)*0.95, max(x_all)*1.05]);
     end
+
+    % SAVE FIGURE
+    saveas(fig4, fullfile(report_dir, sprintf('rmse_growth_linear-%s.png', case_name)));
 end
 
-%% 5. INDIVIDUAL STATE DIVERGENCE PLOTS - Split by graph type
-
-fprintf('Created 6 separate figures for robustness analysis.\n');
+fprintf('Created 6 separate figures for robustness analysis and saved to Report folder.\n');
 drawnow;
 end

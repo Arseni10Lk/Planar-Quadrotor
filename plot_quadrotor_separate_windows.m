@@ -1,17 +1,24 @@
-function plot_quadrotor_separate_windows(time, state_data, output_data, errors)
-% PLOT_QUADROTOR_SEPARATE_WINDOWS_EXACT - Creates exact copies of each quadrotor plot in separate windows
+function plot_quadrotor_separate_windows(time, state_data, output_data, C, errors, case_name)
+% PLOT_QUADROTOR_SEPARATE_WINDOWS - Creates exact copies of each quadrotor plot in separate windows
 % Each figure contains the EXACT same content as the original subplots, WITHOUT ideal lines
+% SAVES figures to /Report folder with case_name suffix.
 
-fprintf('\n== Creating EXACT Separate Windows for Quadrotor State Estimation ===\n');
+fprintf('\n== Creating EXACT Separate Windows for Quadrotor State Estimation (%s) ===\n', case_name);
 
 % Force light theme
 set(0, 'DefaultFigureColor', 'white');
+
+% Create Report Directory
+report_dir = fullfile(pwd, 'Report');
+if ~exist(report_dir, 'dir')
+    mkdir(report_dir);
+end
 
 screen_size = get(0,'ScreenSize');
 
 %% 1. 2D TRAJECTORY - EXACT copy of ax_traj (without ideal) WITH ORIGINAL LEGEND
 fprintf('Creating Figure 1: 2D Trajectory...\n');
-fig1 = figure('Name','Planar Quadrotor: 2D Trajectory',...
+fig1 = figure('Name', sprintf('Planar Quadrotor: 2D Trajectory (%s)', case_name),...
               'NumberTitle','off',...
               'Position',[50, 50, 800, 700],...  % Increased size
               'Color','white');
@@ -23,7 +30,6 @@ box(ax_traj, 'on');
 axis(ax_traj, 'equal');
 
 % Plot data WITHOUT ideal (grey dotted line removed)
-% In original: plot(..., 'Color', [0.4 0.4 0.4], 'LineWidth', 1.5) for ideal - REMOVED
 
 % EKF Estimate - EXACT from original with proper legend
 h_ekf = plot(ax_traj, state_data.estimate(:,1), state_data.estimate(:,3), 'b-', ...
@@ -70,7 +76,6 @@ h_end = scatter(ax_traj, state_data.real(end,1), state_data.real(end,3), ...
         50, [1 0.5 0], 'filled', 'v', 'LineWidth', 1, 'MarkerEdgeColor', 'k');
 
 % Create custom legend like in the original
-% The original has: Ideal (removed), EKF Estimate, Real Trajectory, Start, End
 legend_handles = [h_ekf, h_real, h_start, h_end];
 legend_labels = {'EKF Estimate', 'Real Trajectory', 'Start', 'End'};
 legend(ax_traj, legend_handles, legend_labels, 'Location', 'best', 'FontSize', 9);
@@ -78,13 +83,16 @@ legend(ax_traj, legend_handles, legend_labels, 'Location', 'best', 'FontSize', 9
 % Labels
 xlabel(ax_traj, 'Horizontal Position, x (m)', 'FontWeight', 'bold', 'FontSize', 10);
 ylabel(ax_traj, 'Altitude, y (m)', 'FontWeight', 'bold', 'FontSize', 10);
-title(ax_traj, '2D Trajectory', 'FontWeight', 'bold', 'FontSize', 11);
+title(ax_traj, sprintf('2D Trajectory - %s', case_name), 'FontWeight', 'bold', 'FontSize', 11);
 
 % Fix Axis Limits to avoid crunching (EXACT from original)
 x_margin = bar_length * 0.8;
 y_margin = bar_length * 0.8;
 xlim(ax_traj, [min(state_data.estimate(:,1))-x_margin, max(state_data.estimate(:,1))+x_margin]);
 ylim(ax_traj, [min(state_data.estimate(:,3))-y_margin, max(state_data.estimate(:,3))+y_margin]);
+
+% SAVE FIGURE
+saveas(fig1, fullfile(report_dir, sprintf('trajectory-%s.png', case_name)));
 
 %% 3. INDIVIDUAL STATE PLOTS - 6 Separate Windows (EXACT copies, WITHOUT ideal)
 fprintf('Creating Figures 3-8: Individual State Plots...\n');
@@ -98,11 +106,14 @@ state_config = {
     {'θ (deg)', 'Pitch Angle'};
     {'dθ/dt (deg/s)', 'Pitch Rate'}};
 
+% Sanitize filenames for saving (replace / with _)
+state_filenames = {'x', 'dx_dt', 'y', 'dy_dt', 'theta', 'dtheta_dt'};
+
 blue_lw = 2.0;
 red_lw = 3.0;
 
 for idx = 1:6
-    fig_state = figure('Name', sprintf('State Plot: %s', state_config{idx}{2}),...
+    fig_state = figure('Name', sprintf('State Plot: %s (%s)', state_config{idx}{2}, case_name),...
                        'NumberTitle','off',...
                        'Position',[50+idx*60, 50+idx*60, 750, 550],...  % Increased size
                        'Color','white');
@@ -118,9 +129,6 @@ for idx = 1:6
         conv = @(x)x;
     end
     
-    % Plot WITHOUT ideal (grey dotted line) - removed the first plot
-    % Original had: h1 = plot(..., 'Ideal') - REMOVED
-    
     % Only plot Real and EKF Estimate (EXACT from original)
     h_real = plot(ax_state, time, conv(state_data.real(:,idx)), '-', ...
              'Color', [0.85 0.2 0.2], 'LineWidth', red_lw, 'DisplayName', 'Real');
@@ -129,16 +137,19 @@ for idx = 1:6
              'Color', [0.2 0.3 0.9], 'LineWidth', blue_lw, 'DisplayName', 'EKF');
     
     ylabel(ax_state, state_config{idx}{1}, 'FontSize', 9);
-    title(ax_state, state_config{idx}{2}, 'FontWeight', 'bold', 'FontSize', 10);
+    title(ax_state, sprintf('%s - %s', state_config{idx}{2}, case_name), 'FontWeight', 'bold', 'FontSize', 10);
     xlabel('Time (s)', 'FontSize', 9);
     
     set(ax_state,'GridAlpha',0.3);
     legend([h_real, h_ekf], {'Real', 'EKF'}, 'Location', 'best', 'FontSize', 9);
+
+    % SAVE FIGURE
+    saveas(fig_state, fullfile(report_dir, sprintf('state_%s-%s.png', state_filenames{idx}, case_name)));
 end
 
 %% 5. ERROR EVOLUTION PLOT - EXACT copy of ax_error
 fprintf('Creating Figure 10: Estimation Errors...\n');
-fig_error = figure('Name','Estimation Errors Evolution',...
+fig_error = figure('Name', sprintf('Estimation Errors Evolution (%s)', case_name),...
                    'NumberTitle','off',...
                    'Position',[700, 50, 850, 550],...  % Increased size
                    'Color','white');
@@ -189,7 +200,7 @@ if exist('errors', 'var') && isfield(errors, 'states_real_VS_estimate')
     
     xlabel(ax_error, 'Time (s)', 'FontSize', 10);
     ylabel(ax_error, 'Absolute Error', 'FontSize', 10);
-    title(ax_error, 'Estimation Errors Evolution', 'FontWeight', 'bold', 'FontSize', 11);
+    title(ax_error, sprintf('Estimation Errors Evolution - %s', case_name), 'FontWeight', 'bold', 'FontSize', 11);
     
     % Create compact legend showing just one example
     legend(plot_handles, legend_labels, 'Location', 'best', 'FontSize', 9);
@@ -199,6 +210,9 @@ else
     axis(ax_error, 'off');
 end
 
-fprintf('Created 10 separate figures for quadrotor state estimation.\n');
+% SAVE FIGURE
+saveas(fig_error, fullfile(report_dir, sprintf('estimation_errors-%s.png', case_name)));
+
+fprintf('Created 10 separate figures for quadrotor state estimation and saved to Report folder.\n');
 drawnow;
 end
