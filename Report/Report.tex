@@ -16,6 +16,9 @@
 \usepackage{graphicx}   % For images
 \usepackage{float}      % For figure placement
 
+\usepackage{booktabs} % Required for TABLE
+\usepackage{siunitx}  % Required for TABLE
+
 \usepackage{pdflscape}
 
 \usepackage[notes, backend=biber]{biblatex-chicago}
@@ -352,8 +355,25 @@
 	\caption{The results of the robustness test for the "basic" scenario.}
 	\label{fig:robustness-basic}
 \end{figure}
-	
-	Pablo
+
+	\begin{table}[H]
+    \centering
+    \caption{RMSE Values for State Variables}
+    \label{tab:rmse_results}
+    \begin{tabular}{lcc}
+        \toprule
+        \textbf{Variable} & \textbf{Kalman RMSE} & \textbf{Running Mean RMSE}\\
+        \midrule
+        $x$               & 0.0417 & 0.6632\\
+        $\dot{x}$         & 0.0222 & 0.1866\\
+        $y$               & 0.0084 & 0.5453\\
+        $\dot{y}$         & 0.0659 & 0.1902\\
+        $\theta$          & 0.0084 & 0.0100\\
+        $\dot{\theta}$    & 0.0083 & 0.0095\\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
 	
 	The EKF successfully mitigates sensor noise while maintaining close tracking of the true trajectory. It outperforms Running Mean filter. However, it is important to acknowledge the fact that the filter is perfectly tuned in all the tested scenarios.
 	
