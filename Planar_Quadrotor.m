@@ -117,7 +117,7 @@ noise_data.output_noise_amp = 0.01;
 %% STEP 7: SIMULATION
 
 % Define the test case name here (e.g., 'fall', 'basic', 'roll', 'horizontal')
-current_case = 'fall'; 
+current_case = 'horizontal'; 
 
 [states, output, error] = simulation_quadrotor(rotor_data, control_input.(current_case), noise_data, time, initial_state.(current_case));
 
