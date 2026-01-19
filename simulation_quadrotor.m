@@ -176,6 +176,7 @@ for t = 2:length(time)
     
 end
 
+
 %RUNNING
 errors.output_clean_VS_running_total = output.running - output.clean;
 errors.states_real_VS_running = state.real - state.running;
@@ -194,6 +195,7 @@ num_states = size(errors.states_real_VS_estimate, 2);
 rmse_values = zeros(1, num_states);
 rmse_running = zeros(1, num_states);
 
+
 for i = 1:num_states
     % RMSE = sqrt(mean(error^2))
     rmse_values(i) = sqrt(mean(errors.states_real_VS_estimate(:, i).^2));
@@ -201,9 +203,17 @@ for i = 1:num_states
     rmse_running(i) = sqrt(mean(errors.states_real_VS_running(:, i).^2));
 end
 
+rmse_unfiltered = zeros(1, 3);
+
+for i = 1:3
+    rmse_unfiltered(i) = sqrt(mean(errors.state_real_VS_output_real(:, i).^2));
+end
+
 % Store the RMSE values in the errors structure
+
 % state variables are typically: [x, dx, y, dy, theta, dtheta]
 errors.rmse_states = rmse_values;
 %RUNNING
 errors.rmse_running = rmse_running;
-end
+
+errors.rmse_unfiltered = rmse_unfiltered;

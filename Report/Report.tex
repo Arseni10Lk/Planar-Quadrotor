@@ -16,6 +16,9 @@
 \usepackage{graphicx}   % For images
 \usepackage{float}      % For figure placement
 
+\usepackage{booktabs} % Required for TABLE
+\usepackage{siunitx}  % Required for TABLE
+
 \usepackage{pdflscape}
 
 \usepackage[notes, backend=biber]{biblatex-chicago}
@@ -307,66 +310,357 @@
 	Finally, these computed increments are applied to update the estimates for the horizontal position and linear velocities.
 	
 	\section{Results \& Visualization}
-	
+
+% ==================== 2D TRAJECTORIES ====================
 \begin{figure}[H]
-	\centering
-	\includegraphics[width=1\linewidth]{"Final State Estimation Basic"}
-	\caption{The results of the simulation for the "basic" scenario.}
-	\label{fig:final-state-estimation-basic}
+\centering
+\includegraphics[width=0.9\linewidth]{trajectory-basic}
+\caption{2D trajectory for the basic hover scenario, comparing EKF estimate against the real noisy path.}
+\label{fig:trajectory-basic}
 \end{figure}
 
 \begin{figure}[H]
-	\centering
-	\includegraphics[width=1\linewidth]{"Final State Estimation Horizontal"}
-	\caption{The results of the simulation for the "horizontal" scenario.}
-	\label{fig:final-state-estimation-horizontal}
+\centering
+\includegraphics[width=0.9\linewidth]{trajectory-horizontal}
+\caption{2D trajectory for the horizontal recovery scenario, showing EKF performance during lateral motion.}
+\label{fig:trajectory-horizontal}
 \end{figure}
 
 \begin{figure}[H]
-	\centering
-	\includegraphics[width=1\linewidth]{"Final State Estimation Roll"}
-	\caption{The results of the simulation for the "roll" scenario.}
-	\label{fig:final-state-estimation-roll}
+\centering
+\includegraphics[width=0.9\linewidth]{trajectory-roll}
+\caption{2D trajectory for the 360° roll scenario, illustrating EKF tracking during aggressive rotational motion.}
+\label{fig:trajectory-roll}
 \end{figure}
 
 \begin{figure}[H]
-	\centering
-	\includegraphics[width=1\linewidth]{"Final State Estimation Fall"}
-	\caption{The results of the simulation for the "fall" scenario.}
-	\label{fig:final-state-estimation-fall}
+\centering
+\includegraphics[width=0.9\linewidth]{trajectory-fall}
+\caption{2D trajectory for the straight fall recovery scenario, demonstrating EKF accuracy during descent.}
+\label{fig:trajectory-fall}
 \end{figure}
 
-% --- ROBUSTNESS FIGURES ---
-
+% ==================== INDIVIDUAL STATE PLOTS – BASIC ====================
 \begin{figure}[H]
-	\centering
-	\includegraphics[width=1\linewidth]{"Robustness Horizontal"}
-	\caption{The results of the robustness test for the "horizontal" scenario.}
-	\label{fig:robustness-horizontal}
-\end{figure}
-
-\begin{figure}[H]
-	\centering
-	\includegraphics[width=1\linewidth]{"Robustness Roll"}
-	\caption{The results of the robustness test for the "roll" scenario.}
-	\label{fig:robustness-roll}
+\centering
+\includegraphics[width=0.9\linewidth]{state_x-basic}
+\caption{Horizontal position ($x$) over time for the basic scenario, where the small lateral displacement is caused by slight thrust asymmetry that induces a small rotation of the vehicle.}
+\label{fig:state-x-basic}
 \end{figure}
 
 \begin{figure}[H]
-	\centering
-	\includegraphics[width=1\linewidth]{"Robustness Fall"}
-	\caption{The results of the robustness test for the "fall" scenario.}
-	\label{fig:robustness-fall}
+\centering
+\includegraphics[width=0.9\linewidth]{state_dx_dt-basic}
+\caption{Horizontal velocity ($\dot{x}$) over time for the basic scenario, oscillating around zero and indicating minor alternating horizontal accelerations.}
+\label{fig:state-dx-basic}
 \end{figure}
 
 \begin{figure}[H]
-	\centering
-	\includegraphics[width=1\linewidth]{"Robustness Basic"}
-	\caption{The results of the robustness test for the "basic" scenario.}
-	\label{fig:robustness-basic}
+\centering
+\includegraphics[width=0.9\linewidth]{state_y-basic}
+\caption{Vertical position ($y$) over time for the basic scenario, showing continuous ascent with no reversal in direction.}
+\label{fig:state-y-basic}
 \end{figure}
-	
-	Pablo
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\linewidth]{state_dy_dt-basic}
+\caption{Vertical velocity ($\dot{y}$) over time for the basic scenario, remaining positive and increasing smoothly, confirming upward motion.}
+\label{fig:state-dy-basic}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\linewidth]{state_theta-basic}
+\caption{Pitch angle ($\theta$) over time for the basic scenario, where positive and negative values represent alternating nose-up and nose-down orientations.}
+\label{fig:state-theta-basic}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\linewidth]{state_dtheta_dt-basic}
+\caption{Pitch rate ($\dot{\theta}$) over time for the basic scenario, with zero crossings corresponding to changes in rotational direction.}
+\label{fig:state-dtheta-basic}
+\end{figure}
+
+% ==================== INDIVIDUAL STATE PLOTS – HORIZONTAL ====================
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\linewidth]{state_x-horizontal}
+\caption{Horizontal position ($x$) over time for the horizontal scenario, showing sustained lateral movement in a single direction.}
+\label{fig:state-x-horizontal}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\linewidth]{state_dx_dt-horizontal}
+
+\caption{Horizontal velocity ($\dot{x}$) over time for the horizontal scenario, where variations in slope indicate acceleration and deceleration phases.}
+\label{fig:state-dx-horizontal}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\linewidth]{state_y-horizontal}
+
+\caption{Vertical position ($y$) over time for the horizontal recovery scenario, decreasing initially then increasing}
+\label{fig:state-y-horizontal}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\linewidth]{state_dy_dt-horizontal}
+
+\caption{Vertical velocity ($\dot{y}$) over time for the horizontal recovery scenario, where negative values indicate descent and the zero crossing marks direction reversal.}
+\label{fig:state-dy-horizontal}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\linewidth]{state_theta-horizontal}
+
+\caption{Pitch angle ($\theta$) over time for the horizontal recovery scenario, showing rapid attitude change followed by gradual stabilization.}
+\label{fig:state-theta-horizontal}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\linewidth]{state_dtheta_dt-horizontal}
+
+\caption{Pitch rate ($\dot{\theta}$) over time for the horizontal recovery scenario, characterized by high initial rotation rates that later reduce in magnitude.}
+\label{fig:state-dtheta-horizontal}
+\end{figure}
+
+% ==================== INDIVIDUAL STATE PLOTS – ROLL ====================
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\linewidth]{state_x-roll}
+
+\caption{Horizontal position ($x$) over time for the roll scenario, decreasing continuously, indicating motion opposite to the reference direction.}
+\label{fig:state-x-roll}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\linewidth]{state_dx_dt-roll}
+
+\caption{Horizontal velocity ($\dot{x}$) over time for the roll scenario, remaining negative throughout, confirming persistent backward motion.}
+\label{fig:state-dx-roll}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\linewidth]{state_y-roll}
+\caption{Vertical position ($y$) over time for the roll scenario, showing alternating ascent and descent with clear extrema.}
+\label{fig:state-y-roll}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\linewidth]{state_dy_dt-roll}
+\caption{Vertical velocity ($\dot{y}$) over time for the roll scenario, where multiple zero crossings indicate repeated reversals in vertical motion.}
+\label{fig:state-dy-roll}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\linewidth]{state_theta-roll}
+\caption{Pitch angle ($\theta$) over time for the roll scenario, exceeding 360°, confirming completion of a full rotational maneuver.}
+\label{fig:state-theta-roll}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\linewidth]{state_dtheta_dt-roll}
+\caption{Pitch rate ($\dot{\theta}$) over time for the roll scenario, with large positive values indicating rapid rotation and negative values marking deceleration.}
+\label{fig:state-dtheta-roll}
+\end{figure}
+
+% ==================== INDIVIDUAL STATE PLOTS – FALL ====================
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\linewidth]{state_x-fall}
+\caption{Horizontal position ($x$) over time for the fall scenario, showing continuous forward motion during descent.}
+\label{fig:state-x-fall}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\linewidth]{state_dx_dt-fall}
+\caption{Horizontal velocity ($\dot{x}$) over time for the fall scenario, increasing almost linearly, indicating constant horizontal acceleration.}
+\label{fig:state-dx-fall}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\linewidth]{state_y-fall}
+
+\caption{Vertical position ($y$) over time for the fall scenario, decreasing to a minimum before slight recovery, marking the lowest altitude reached.}
+\label{fig:state-y-fall}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\linewidth]{state_dy_dt-fall}
+\caption{Vertical velocity ($\dot{y}$) over time for the fall scenario, negative during free fall and approaching zero as recovery thrust is applied.}
+\label{fig:state-dy-fall}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\linewidth]{state_theta-fall}
+\caption{Pitch angle ($\theta$) over time for the fall scenario, showing progressive nose-down rotation caused by loss of vertical stability.}
+\label{fig:state-theta-fall}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\linewidth]{state_dtheta_dt-fall}
+\caption{Pitch rate ($\dot{\theta}$) over time for the fall scenario, oscillating with sign changes that reflect alternating corrective rotational actions.}
+\label{fig:state-dtheta-fall}
+\end{figure}
+
+% ==================== ESTIMATION ERROR PLOTS ====================
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\linewidth]{estimation_errors-basic}
+\caption{Absolute estimation errors for all states over time (basic scenario), comparing EKF and running mean filters. While some states show varying benefit of EKF over running mean ($x$, $\dot{x}$, $\dot{y}$), and others show significant error spikes of running mean ($\theta$, $\dot{\theta}$), $y$ in particular displays constant growth of its error, while EKF keeps almost constant.}
+\label{fig:error-basic}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\linewidth]{estimation_errors-horizontal}
+\caption{Absolute estimation errors for all states over time (horizontal recovery scenario). With a more control-heavy case, running mean errors show significant increase, unbound in cases of $x$, $y$ and $\theta$.}
+\label{fig:error-horizontal}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\linewidth]{estimation_errors-roll}
+\caption{Absolute estimation errors for all states over time (roll scenario). This challenging simulation shows unreliability of running mean for complicated system movement.}
+\label{fig:error-roll}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\linewidth]{estimation_errors-fall}
+\caption{Absolute estimation errors for all states over time (fall recovery scenario). Not explicitly rotating system, just like the basic scenario, shows varying accuracy of running mean. Although $y$ error is now bounded, error spikes of $\theta$ and $\dot{\theta}$ can't be ignored.}
+\label{fig:error-fall}
+\end{figure}
+
+% ==================== NOISE LEVELS PLOTS ====================
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\linewidth]{noise_levels-basic}
+\caption{Process and measurement variance for robustness analysis. These values don't vary between the scenarios.}
+\label{fig:noise-levels-basic}
+\end{figure}
+
+% ==================== EKF RMSE ACROSS NOISE CONDITIONS ====================
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\linewidth]{robustness_rmse-basic}
+\caption{EKF RMSE across four noise levels for each state (basic scenario). For the most part, RMSE increases along with variance, however $x$ and $\dot{x}$ are slightly different due to their progressing Euler integration error. Same trend can be expected in the other cases.}
+\label{fig:rmse-ekf-basic}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\linewidth]{robustness_rmse-horizontal}
+\caption{EKF RMSE across four noise levels for each state (horizontal recovery scenario). As expected, $x$ is still different from the rest, for the same reasons as described in Figure \ref{fig:rmse-ekf-basic} description. Maximum RMSE values have grown compared to the basic cases because of the increased movement complexity.}
+\label{fig:rmse-ekf-horizontal}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\linewidth]{robustness_rmse-roll}
+\caption{EKF RMSE across four noise levels for each state (roll scenario). Once again, $x$ and its derivative display different RMSE progression when compared to the rest. This time, high variance leads to the highest RMSE values, even overtaking the very high variance.}
+\label{fig:rmse-ekf-roll}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\linewidth]{robustness_rmse-fall}
+\caption{EKF RMSE across four noise levels for each state (fall recovery scenario). For a simple motion, same RMSE trend is seen as for the basic case (fig. \ref{fig:rmse-ekf-basic}), with similar RMSE values as well.}
+\label{fig:rmse-ekf-fall}
+\end{figure}
+
+% ==================== RMSE GROWTH – LOG SCALE ====================
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\linewidth]{rmse_growth_log-basic}
+\caption{RMSE growth for $x$ and $\dot{x}$ under increasing noise (log scale, basic scenario). As discussed previously, $x$ and $\dot{x}$ are system parameters that have the biggest errors. In the simplest case, running mean is not so far from the EKF in terms of robustness.}
+\label{fig:rmse-growth-log-basic}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\linewidth]{rmse_growth_log-horizontal}
+\caption{RMSE growth for $x$ and $\dot{x}$ under increasing noise (log scale, horizontal recovery scenario). Complicated movement cases are harder for running mean to keep up with. Divergence of running mean happens significantly earlier compared to EKF.}
+\label{fig:rmse-growth-log-horizontal}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\linewidth]{rmse_growth_log-roll}
+\caption{RMSE growth for $x$ and $\dot{x}$ under increasing noise (log scale, roll scenario). Another control-heavy case, another early running mean divergence. Interesting difference is early divergence of $\dot{x}$.}
+\label{fig:rmse-growth-log-roll}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\linewidth]{rmse_growth_log-fall}
+\caption{RMSE growth for $x$ and $\dot{x}$ under increasing noise (log scale, fall recovery scenario). As stated before, in simple simulations without rotation running mean is actually comparable in efficiency with the EKF.}
+\label{fig:rmse-growth-log-fall}
+\end{figure}
+
+% ==================== RMSE GROWTH – LINEAR SCALE ====================
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\linewidth]{rmse_growth_linear-basic}
+\caption{RMSE growth for $y$, $\dot{y}$, $\theta$, and $\dot{\theta}$ under increasing noise (linear scale, basic scenario). Unlike the significant error growth of $x$ and $\dot{x}$, other system parameters RMSE growth can be displayed linearly. Measured parameters of the system have significantly higher variance multiplier required for divergence.}
+\label{fig:rmse-growth-linear-basic}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\linewidth]{rmse_growth_linear-horizontal}
+\caption{RMSE growth for $y$, $\dot{y}$, $\theta$, and $\dot{\theta}$ under increasing noise (linear scale, horizontal recovery scenario). The only visible difference present is some slight running mean divergence multiplier (which shows how stable EKF is with different flight cases).}
+\label{fig:rmse-growth-linear-horizontal}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\linewidth]{rmse_growth_linear-roll}
+\caption{RMSE growth for $y$, $\dot{y}$, $\theta$, and $\dot{\theta}$ under increasing noise (linear scale, roll scenario). Another case, another running mean multiplier change, EKF stable as in the two previous examples (figs. \ref{fig:rmse-growth-linear-basic}, \ref{fig:rmse-growth-linear-horizontal}}
+\label{fig:rmse-growth-linear-roll}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\linewidth]{rmse_growth_linear-fall}
+\caption{RMSE growth for $y$, $\dot{y}$, $\theta$, and $\dot{\theta}$ under increasing noise (linear scale, fall recovery scenario). The last case definitely proves the point of EKF divergence multiplier stability for different flight conditions of the quadrotor system.}
+\label{fig:rmse-growth-linear-fall}
+\end{figure}
+
+	\begin{table}[H]
+    \centering
+    \caption{RMSE Values for State Variables}
+    \label{tab:rmse_results}
+    \begin{tabular}{lccc}
+        \toprule
+        \textbf{Variable} & \textbf{Kalman RMSE} & \textbf{Running Mean RMSE} & \textbf{Unfiltered RMSE} \\
+        \midrule
+        $x$               & 0.0417 & 0.6632 & - \\
+        $\dot{x}$         & 0.0222 & 0.1866 & - \\
+        $y$               & 0.0084 & 0.5453 & 0.0098 \\
+        $\dot{y}$         & 0.0659 & 0.1902 & - \\        $\theta$          & 0.0084 & 0.0100 & 0.0101 \\
+        $\dot{\theta}$    & 0.0083 & 0.0095 & 0.0104 \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
 	
 	The EKF successfully mitigates sensor noise while maintaining close tracking of the true trajectory. It outperforms Running Mean filter. However, it is important to acknowledge the fact that the filter is perfectly tuned in all the tested scenarios.
 	

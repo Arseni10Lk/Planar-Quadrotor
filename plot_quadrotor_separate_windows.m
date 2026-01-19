@@ -194,44 +194,44 @@ fig_error = figure('Name', sprintf('Estimation Errors Evolution (%s)', case_name
                    'Color','white');
 
 ax_error = gca;
-hold(ax_error, 'on');
-grid(ax_error, 'on');
-box(ax_error, 'on');
+hold(ax_error, 'on'); grid(ax_error, 'on'); box(ax_error, 'on');
 
 if exist('errors', 'var') && isfield(errors, 'states_real_VS_estimate')
-    % Data Prep (EXACT from original)
+    % Data Prep
     err_k = abs(errors.states_real_VS_estimate);
     err_k(:,5:6) = rad2deg(err_k(:,5:6));
     err_r = abs(errors.states_real_VS_running);
     err_r(:,5:6) = rad2deg(err_r(:,5:6));
     
     colors = lines(6);
+    % Variable names for the solid lines
     names = {'x', 'dx', 'y', 'dy', 'θ', 'dθ'};
     max_y = 0;
     
-    % Store handles for legend
-    plot_handles = [];
-    legend_labels = {};
+    ekf_handles = [];
     
     for i = 1:6
         w = min(40, floor(length(time)/8));
         
-        % Plot Running (Dashed) - Plot FIRST so it appears in legend but stays behind if needed
-        h_run = plot(ax_error, time, movmean(err_r(:,i), w), '--', ...
-             'Color', colors(i,:), 'LineWidth', 1.0);
+        % 1. Plot Running (Dashed) 
+        % 'HandleVisibility','off' -> These actual colored dashed lines are NOT added to legend
+        plot(ax_error, time, movmean(err_r(:,i), w), '--', ...
+             'Color', colors(i,:), 'LineWidth', 1.0, ...
+             'HandleVisibility', 'off');
         
-        % Plot EKF (Solid)
+        % 2. Plot EKF (Solid)
         ekf_line = movmean(err_k(:,i), w);
         max_y = max(max_y, max(ekf_line));
+        
         h_ekf = plot(ax_error, time, ekf_line, '-', ...
              'Color', colors(i,:), 'LineWidth', 1.5);
-        
-        % Store handles for legend (only once per state)
-        if i == 1
-            plot_handles = [h_run, h_ekf];
-            legend_labels = {[names{i} ' (Running Mean)'], [names{i} ' (EKF)']};
-        end
+             
+        ekf_handles = [ekf_handles, h_ekf];
     end
+    
+    % --- CREATE DUMMY PLOT FOR LEGEND ---
+    % Plot NaN values (invisible) but with Black Dashed style
+    h_dummy_run = plot(ax_error, NaN, NaN, 'k--', 'LineWidth', 1.0);
     
     if max_y > 0
         ylim(ax_error, [0, max_y * 1.3]);
@@ -241,8 +241,11 @@ if exist('errors', 'var') && isfield(errors, 'states_real_VS_estimate')
     ylabel(ax_error, 'Absolute Error', 'FontSize', 10);
     title(ax_error, sprintf('Estimation Errors Evolution - %s', case_name), 'FontWeight', 'bold', 'FontSize', 11);
     
-    % Create compact legend showing just one example
-    legend(plot_handles, legend_labels, 'Location', 'best', 'FontSize', 9);
+    % Combine handles: 6 Solid Colors + 1 Black Dashed
+    final_handles = [ekf_handles, h_dummy_run];
+    final_labels  = [names, {'Running Mean'}];
+    
+    legend(final_handles, final_labels, 'Location', 'best', 'FontSize', 9);
 else
     text(0.5, 0.5, 'No Error Data Available',...
          'HorizontalAlignment', 'center', 'FontSize', 10, 'FontWeight', 'bold');
