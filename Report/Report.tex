@@ -270,7 +270,7 @@
 		
 	Following the state acquisition for the current timestep, the $F$ matrix is updated based on the current angle (\texttt{theta\_estimate}) and thrust (\texttt{control\_input}). This dependency characterizes the Extended Kalman Filter. The error covariance is then predicted:
 	\begin{equation}
-		P_k^- = A_k P_{k-1} A_k^T + W_k Q_{k-1} W_k^T 
+		P_k^- = A_k P_{k-1} A_k^T + Q_{k-1} 
 	\end{equation}
 	where $Q$ represents the confidence in the physics model.
 	
