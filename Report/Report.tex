@@ -673,500 +673,515 @@
 	\printbibliography
 	\newpage
 	\appendix
-	\section{Code}
-	
-	\subsection{Planar\_Quadrotor.m}
+	\section{Planar\_Quadrotor.m}
 	
 	\begin{lstlisting}[style=myMatlabStyle]
-	clc;
-	clear; 
-	close all;
-	
-	rng(47);
-	
-	%% DEFINE VARIABLES
-	m = 0.5;         % mass [kg] 
-	r = 0.15;        % distance from center to rotors [m]
-	I = 0.005;       % moment of inertia [kg*m^2]
-	g = 9.81;        % gravity [m/s^2]
-	dt = 0.01;       % time step [s] 
-	theta = 0;       % angle [rads]
-	u1 = 5;       % force [N]
-	u2 = 5;       % force [N]
-	
-	% Structure definition
-	rotor_data.m = m;
-	rotor_data.r = r;
-	rotor_data.I = I;
-	rotor_data.g = g;
-	rotor_data.dt = dt;
-	rotor_data.theta = theta;
-	rotor_data.u1 = u1;
-	rotor_data.u2 = u2;
-	
-	t_max = 10;      % simulation duration [s]
-	
-	% A matrix - System dynamics
-	A = [0  1  0  0   0   0;
-	0  0  0  0   -cos(theta)*(u1+u2)/m   0;
-	0  0  0  1   0   0;
-	0  0  0  0   -sin(theta)*(u1+u2)/m   0;
-	0  0  0  0   0   1;
-	0  0  0  0   0   0];
-	
-	% It desscribes the states, so let's say it is rotor data 
-	rotor_data.A = A;
-	
-	% C matrix - Measurements
-	C = [0  0  1  0  0  0;
-	0  0  0  0  1  0;
-	0  0  0  0  0  1];
-	
-	rotor_data.C = C; % It says what we measure, so let's say it is rotor data 
-	% (like what the sensors are)
-	
-	%% STEP 4: DEFINE TIME VECTOR
-	time = 0:dt:t_max;  
-	
-	%% STEP 5: DEFINE CONTROL INPUTS
-	% Create CU1 and CU2 (basic case)
-	CU1 = u1 * 0.6 * (1 + 0.001*cos(2*time));  
-	CU2 = u2 * 0.6 * (1 + 0.001*sin(2*time));
-	
-	% Create CU3 and CU4 (horizontal flight recovery)
-	CU3 = zeros(size(time));
-	CU4 = zeros(size(time));
-	
-	for t = 0:109 % roll up
-	CU3(t + 1) = u1 * 0.81 * (1 + 0.001*cos(2 * 0.01 * t));
-	CU4(t + 1) = u2 * 0.8 * (1 + 0.001*sin(2 * 0.01 * t));
-	end
-	for t = 110:219  % stop rotation
-	CU3(t + 1) = u1 * 0.8 * (1 + 0.001*cos(2 * 0.01 * t));
-	CU4(t + 1) = u2* 0.81 * (1 + 0.001*sin(2 * 0.01 * t));
-	end
-	for t = 220:length(time) % fly up
-	CU3(t + 1) = u1 * 0.8 * (1 + 0.001*cos(2 * 0.01 * t));
-	CU4(t + 1) = u2 * 0.8 * (1 + 0.001*sin(2 * 0.01 * t));
-	end
-	
-	% Create CU5 and CU6 (360 roll)
-	CU5 = zeros(size(time));
-	CU6 = zeros(size(time));
-	
-	for t = 0:199 % iniiate roll
-	CU5(t + 1) = u1 * 0.808 * (1 + 0.001*cos(2 * 0.01 * t));
-	CU6(t + 1) = u2 * 0.8 * (1 + 0.001*sin(2 * 0.01 * t));
-	end 
-	for t = 200:299 % let it roll
-	CU5(t + 1) = u1 * 0 * (1 + 0.001*cos(2 * 0.01 * t));
-	CU6(t + 1) = u2 * 0 * (1 + 0.001*sin(2 * 0.01 * t));
-	end 
-	for t = 300:500 % stop rotation
-	CU5(t + 1) = u1 * 0 * (1 + 0.001*cos(2 * 0.01 * t));
-	CU6(t + 1) = u2 * 0.008 * (1 + 0.001*sin(2 * 0.01 * t));
-	end
-	for t = 501:length(time) % recover vertically
-	CU5(t + 1) = u1 * (1 + 0.001*cos(2 * 0.01 * t));
-	CU6(t + 1) = u2 * (1 + 0.001*sin(2 * 0.01 * t));
-	end 
-	
-	% Create CU7 and CU8 (straight fall recovery)
-	CU7 = u1 * 0.54 * (1 + 0.001*cos(2*time));
-	CU8 = u2 * 0.54 * (1 + 0.001*sin(2*time));
-	
-	% Combine for sim
-	control_input.basic = [CU1; CU2]';
-	control_input.horizontal = [CU3; CU4]';
-	control_input.roll = [CU5; CU6]';
-	control_input.fall = [CU7; CU8]';
-	
-	
-	%% STEP 6: DEFINE NOISE AMPLITUDE & robustness testing
-	
-	initial_state.basic = [0;0;1;0;0;0]; % basic case
-	initial_state.horizontal = [0;3;10;0;-pi/2;0]; % horizontal flight recovery
-	initial_state.roll = [0;0;50;5;0;0]; % roll 
-	initial_state.fall = [0;-1;15;-3;-(pi/2-atan(3/1));0]; % straight fall recovery
-	
-	noise_data.state_noise_amp = 0.003;
-	noise_data.output_noise_amp = 0.01;
-	
-	%% STEP 7: SIMULATION
-	
-	[states, output, error] = simulation_quadrotor(rotor_data, control_input.fall, noise_data, time, initial_state.fall);
-	
-	plot_quadrotor_enhanced(time, states, output, C, error);
-	
-	[rmse_mat, noise_mat, div_data, rmse_running] = robustness(rotor_data, control_input.fall, time, initial_state.fall, noise_data);
-	
-	plot_robustness_results(rmse_mat, noise_mat, div_data);
+clc;
+clear; 
+close all;
+
+rng(47);
+
+%% DEFINE VARIABLES
+m = 0.5;         % mass [kg] 
+r = 0.15;        % distance from center to rotors [m]
+I = 0.005;       % moment of inertia [kg*m^2]
+g = 9.81;        % gravity [m/s^2]
+dt = 0.01;       % time step [s] 
+theta = 0;       % angle [rads]
+u1 = 5;       % force [N]
+u2 = 5;       % force [N]
+
+% Structure definition
+rotor_data.m = m;
+rotor_data.r = r;
+rotor_data.I = I;
+rotor_data.g = g;
+rotor_data.dt = dt;
+rotor_data.theta = theta;
+rotor_data.u1 = u1;
+rotor_data.u2 = u2;
+
+t_max = 10;      % simulation duration [s]
+
+% A matrix - System dynamics
+A = [0  1  0  0   0   0;
+0  0  0  0   -cos(theta)*(u1+u2)/m   0;
+0  0  0  1   0   0;
+0  0  0  0   -sin(theta)*(u1+u2)/m   0;
+0  0  0  0   0   1;
+0  0  0  0   0   0];
+
+% It desscribes the states, so let's say it is rotor data 
+rotor_data.A = A;
+
+% C matrix - Measurements
+C = [0  0  1  0  0  0;
+0  0  0  0  1  0;
+0  0  0  0  0  1];
+
+rotor_data.C = C; % It says what we measure, so let's say it is rotor data 
+% (like what the sensors are)
+
+%% STEP 4: DEFINE TIME VECTOR
+time = 0:dt:t_max;  
+
+%% STEP 5: DEFINE CONTROL INPUTS
+% Create CU1 and CU2 (basic case)
+CU1 = u1 * 0.6 * (1 + 0.001*cos(2*time));  
+CU2 = u2 * 0.6 * (1 + 0.001*sin(2*time));
+
+% Create CU3 and CU4 (horizontal flight recovery)
+CU3 = zeros(size(time));
+CU4 = zeros(size(time));
+
+for t = 0:109 % roll up
+CU3(t + 1) = u1 * 0.81 * (1 + 0.001*cos(2 * 0.01 * t));
+CU4(t + 1) = u2 * 0.8 * (1 + 0.001*sin(2 * 0.01 * t));
+end
+for t = 110:219  % stop rotation
+CU3(t + 1) = u1 * 0.8 * (1 + 0.001*cos(2 * 0.01 * t));
+CU4(t + 1) = u2* 0.81 * (1 + 0.001*sin(2 * 0.01 * t));
+end
+for t = 220:length(time) % fly up
+CU3(t + 1) = u1 * 0.8 * (1 + 0.001*cos(2 * 0.01 * t));
+CU4(t + 1) = u2 * 0.8 * (1 + 0.001*sin(2 * 0.01 * t));
+end
+
+% Create CU5 and CU6 (360 roll)
+CU5 = zeros(size(time));
+CU6 = zeros(size(time));
+
+for t = 0:199 % iniiate roll
+CU5(t + 1) = u1 * 0.808 * (1 + 0.001*cos(2 * 0.01 * t));
+CU6(t + 1) = u2 * 0.8 * (1 + 0.001*sin(2 * 0.01 * t));
+end 
+for t = 200:299 % let it roll
+CU5(t + 1) = u1 * 0 * (1 + 0.001*cos(2 * 0.01 * t));
+CU6(t + 1) = u2 * 0 * (1 + 0.001*sin(2 * 0.01 * t));
+end 
+for t = 300:500 % stop rotation
+CU5(t + 1) = u1 * 0 * (1 + 0.001*cos(2 * 0.01 * t));
+CU6(t + 1) = u2 * 0.008 * (1 + 0.001*sin(2 * 0.01 * t));
+end
+for t = 501:length(time) % recover vertically
+CU5(t + 1) = u1 * (1 + 0.001*cos(2 * 0.01 * t));
+CU6(t + 1) = u2 * (1 + 0.001*sin(2 * 0.01 * t));
+end 
+
+% Create CU7 and CU8 (straight fall recovery)
+CU7 = u1 * 0.54 * (1 + 0.001*cos(2*time));
+CU8 = u2 * 0.54 * (1 + 0.001*sin(2*time));
+
+% Combine for sim
+control_input.basic = [CU1; CU2]';
+control_input.horizontal = [CU3; CU4]';
+control_input.roll = [CU5; CU6]';
+control_input.fall = [CU7; CU8]';
+
+
+%% STEP 6: DEFINE NOISE AMPLITUDE & robustness testing
+
+initial_state.basic = [0;0;1;0;0;0]; % basic case
+initial_state.horizontal = [0;3;10;0;-pi/2;0]; % horizontal flight recovery
+initial_state.roll = [0;0;50;5;0;0]; % roll 
+initial_state.fall = [0;-1;15;-3;-(pi/2-atan(3/1));0]; % straight fall recovery
+
+noise_data.state_noise_amp = 0.003;
+noise_data.output_noise_amp = 0.01;
+
+%% STEP 7: SIMULATION
+
+% Define the test case name here (e.g., 'fall', 'basic', 'roll', 'horizontal')
+current_case = 'roll'; 
+
+[states, output, error] = simulation_quadrotor(rotor_data, control_input.(current_case), noise_data, time, initial_state.(current_case));
+
+% Run Robustness
+[rmse_mat, noise_mat, div_data, rmse_running] = robustness(rotor_data, control_input.(current_case), time, initial_state.(current_case), noise_data);
+
+% New functions with saving logic:
+% Pass 'current_case' to save files with that specific name
+% plot_robustness_separate_windows(rmse_mat, noise_mat, div_data, current_case);
+
+plot_quadrotor_separate_windows(time, states, output, C, error, current_case);
 \end{lstlisting}
 
-	\subsection{simulation\_quadrotor.m}
+	\section{simulation\_quadrotor.m}
 	\begin{lstlisting}[style=myMatlabStyle]
-		function [state, output, errors] = simulation_quadrotor(rotor_data, control_input, noise_data, time, x0)
-		
-		% Three functions combined into one
-		
-		% getting all the quadrotor characteristics
-		m = rotor_data.m; 
-		r = rotor_data.r; 
-		I = rotor_data.I; 
-		g = rotor_data.g; 
-		dt = rotor_data.dt;
-		C = rotor_data.C;
-		A = rotor_data.A;
-		
-		if nargin == 4
-		x0 = zeros(1,6);
-		end
-		
-		% Initialize output and states based on input parameters
-		output.clean = zeros(length(time), size(C, 1));
-		output.real = zeros(length(time), size(C, 1));
-		output.filtered = zeros(length(time), size(C, 1));
-		output.running = zeros(length(time), size(C, 1));%RUNNING
-		
-		state.clean = zeros(length(time), size(A, 1));
-		state.real = zeros(length(time), size(A, 1));
-		state.estimate = zeros(length(time), size(A, 1));
-		state.running = zeros(length(time), size(A, 1));%RUNNING
-		
-		% Simulate the system dynamics over the specified time
-		
-		% Set initial state
-		state.clean(1, :) = x0; 
-		state.real(1, :) = x0; 
-		state.estimate(1, :) = x0;
-		state.running(1, :) = x0;%RUNNING
-		
-		output.clean(1, :) = C*state.clean(1, :)';
-		output.real(1, :) = output.clean(1, :);
-		output.filtered(1, :) = output.clean(1, :);
-		output.running(1, :) = output.clean(1, :);%RUNNING
-		
-		% Filter data
-		
-		P = eye(6); % Initial Uncertainty
-		% Q: Process Noise Covariance (Trust in Physics)
-		% We use a small value to allow the model to drive the smoothness
-		Q = eye(6) * (noise_data.state_noise_amp^2); 
-		% R: Measurement Noise Covariance (Trust in Sensors)
-		% We set this higher than actual noise to filter out the jitters
-		R = eye(3) * (noise_data.output_noise_amp^2);
-		
-		% Running 
-		window_size = 10; % You can adjust this window size
-		
-		for t = 2:length(time)
-		
-		%%% Perfect simulation
-		
-		% update theta
-		theta_clean = state.clean(t - 1, 5);
-		
-		% Update states based on linear dynamics, this works for everything
-		% except dx and dy
-		delta_x_clean(1) = state.clean(t - 1, 2)*dt;
-		delta_x_clean(3) = state.clean(t - 1, 4)*dt;
-		delta_x_clean(5) = state.clean(t - 1, 6)*dt;
-		delta_x_clean(6) = (r / I * control_input(t, 1) - r / I * control_input(t, 2)) * dt;
-		
-		% Now, non-linear part
-		delta_x_clean(2) = (-sin(theta_clean)*(control_input(t, 1)+control_input(t, 2))/m) * dt;
-		delta_x_clean(4) = (cos(theta_clean)*(control_input(t, 1)+control_input(t, 2))/m - g) * dt;
-		
-		
-		% Lastly, updating states
-		state.clean(t, :) = state.clean(t-1, :) + delta_x_clean(:)';
-		output.clean(t, :) = (C * state.clean(t, :)')';
-		
-		%%% Real-world simulation
-		
-		% update theta
-		theta_real = state.real(t - 1, 5);
-		
-		% Update states based on linear dynamics, this works for everything
-		% except dx and dy
-		delta_x_real(1) = state.real(t - 1, 2)*dt;
-		delta_x_real(3) = state.real(t - 1, 4)*dt;
-		delta_x_real(5) = state.real(t - 1, 6)*dt;
-		delta_x_real(6) = (r / I * control_input(t, 1) - r / I * control_input(t, 2)) * dt;
-		
-		% Now, non-linear part
-		delta_x_real(2) = (-sin(theta_real)*(control_input(t, 1)+control_input(t, 2))/m) * dt;
-		delta_x_real(4) = (cos(theta_real)*(control_input(t, 1)+control_input(t, 2))/m - g) * dt;
-		
-		% getting all the noise characteristics
-		state_noise = noise_data.state_noise_amp * randn(1, size(A, 1));
-		output_noise = noise_data.output_noise_amp * randn(1, size(C, 1));
-		
-		state.real(t, :) = state.real(t - 1, :) + delta_x_real(:)' + state_noise;
-		output.real(t, :) = (C*state.real(t, :)')' + output_noise;
-		
-		%%% Filter
-		% Filter uses perfect physics and sensor measurements, but we do not pass
-		% real state to it.
-		
-		% PREDICTION STEP
-		
-		% update theta
-		theta_estimate = state.estimate(t - 1, 5);
-		
-		% Update states based on linear dynamics, this works for everything
-		% except dx and dy
-		delta_x_estimate(1) = state.estimate(t - 1, 2)*dt;
-		delta_x_estimate(3) = state.estimate(t - 1, 4)*dt;
-		delta_x_estimate(5) = state.estimate(t - 1, 6)*dt;
-		delta_x_estimate(6) = (r / I * control_input(t, 1) - r / I * control_input(t, 2)) * dt;
-		
-		% Now, non-linear part
-		delta_x_estimate(2) = (-sin(theta_estimate)*(control_input(t, 1)+control_input(t, 2))/m) * dt;
-		delta_x_estimate(4) = (cos(theta_estimate)*(control_input(t, 1)+control_input(t, 2))/m - g) * dt;
-		
-		state.estimate(t, :) = state.estimate(t - 1, :) + delta_x_estimate(:)';
-		
-		% Predict covariance
-		
-		F = eye(6) + dt * [0 1 0 0 0 0;
-		0 0 0 0 -cos(theta_estimate)*(control_input(t, 1)+control_input(t, 2))/m 0;
-		0 0 0 1 0 0;
-		0 0 0 0 -sin(theta_estimate)*(control_input(t, 1)+control_input(t, 2))/m 0;
-		0 0 0 0 0 1;
-		0 0 0 0 0 0];
-		
-		P_prediction = F * P * F' + Q;
-		
-		% CORRECTION STEP
-		
-		% 1. Calculate Measurement Residual 
-		measurement_residual = output.real(t, :)' - C * state.estimate(t, :)';
-		measurement_residual(2) = mod(measurement_residual(2) + pi, 2*pi) - pi;
-		
-		% 2. Calculate Kalman Gain
-		S = C * P_prediction * C' + R;
-		K = P_prediction * C' / S;
-		
-		% 3. Update State Estimate
-		state.estimate(t, :) = state.estimate(t, :) + (K * measurement_residual)';
-		output.filtered(t, :) = C * state.estimate(t, :)';
-		
-		% 4. Update Covariance
-		P = (eye(6) - K * C) * P_prediction;
-		
-		
-		% RUNNING 
-		% Determine the start of the window
-		window_start = max(1, t - window_size);
-		
-		% Average the noisy measurements ('real' outputs) over the window
-		output.running(t, :) = mean(output.real(window_start:t, :), 1);
-		
-		% update theta
-		theta_running = output.running(t, 2);
-		
-		state.running(t, 3) = output.running(t, 1); % Overwrite y (State 3)
-		state.running(t, 5) = output.running(t, 2); % Overwrite theta (State 5)
-		state.running(t, 6) = output.running(t, 3); % Overwrite theta_dot (State 6)
-		
-		% For the states, we apply the same averaging to the noisy running states
-		% Update states based on linear dynamics, this works for everything
-		% except dx and dy
-		delta_x_running(1) = state.running(t-1, 2) * dt;
-		
-		% Now, non-linear part
-		delta_x_running(2) = (-sin(theta_running)*(control_input(t, 1)+control_input(t, 2))/m) * dt;
-		delta_x_running(4) = (cos(theta_running)*(control_input(t, 1)+control_input(t, 2))/m - g) * dt;
-		
-		state.running(t, [1 2 4]) = state.running(t - 1, [1 2 4]) + delta_x_running([1 2 4]);
-		
-		end
-		
-		%RUNNING
-		errors.output_clean_VS_running_total = output.running - output.clean;
-		errors.states_real_VS_running = state.real - state.running;
-		
-		errors.output_clean_VS_real_total = output.real - output.clean;
-		errors.output_clean_VS_filtered_total = output.filtered - output.clean;
-		errors.output_real_VS_filtered_total = output.filtered - output.real;
-		
-		errors.states_clean_VS_real_total = state.real - state.clean;
-		errors.states_real_VS_estimate = state.real - state.estimate;
-		errors.state_real_VS_output_real = output.real - state.real(:, [3, 5, 6]);
-		errors.state_real_VS_output_filtered = output.filtered - state.real(:, [3, 5, 6]);
-		
-		% Calculate the Mean Squared Error for each column (state variable)
-		num_states = size(errors.states_real_VS_estimate, 2);
-		rmse_values = zeros(1, num_states);
-		rmse_running = zeros(1, num_states);
-		
-		for i = 1:num_states
-		% RMSE = sqrt(mean(error^2))
-		rmse_values(i) = sqrt(mean(errors.states_real_VS_estimate(:, i).^2));
-		%RUNNING
-		rmse_running(i) = sqrt(mean(errors.states_real_VS_running(:, i).^2));
-		end
-		
-		% Store the RMSE values in the errors structure
-		% state variables are typically: [x, dx, y, dy, theta, dtheta]
-		errors.rmse_states = rmse_values;
-		%RUNNING
-		errors.rmse_running = rmse_running;
-		end
+function [state, output, errors] = simulation_quadrotor(rotor_data, control_input, noise_data, time, x0)
+
+% Three functions combined into one
+
+% getting all the quadrotor characteristics
+m = rotor_data.m; 
+r = rotor_data.r; 
+I = rotor_data.I; 
+g = rotor_data.g; 
+dt = rotor_data.dt;
+C = rotor_data.C;
+A = rotor_data.A;
+
+if nargin == 4
+x0 = zeros(1,6);
+end
+
+% Initialize output and states based on input parameters
+output.clean = zeros(length(time), size(C, 1));
+output.real = zeros(length(time), size(C, 1));
+output.filtered = zeros(length(time), size(C, 1));
+output.running = zeros(length(time), size(C, 1));%RUNNING
+
+state.clean = zeros(length(time), size(A, 1));
+state.real = zeros(length(time), size(A, 1));
+state.estimate = zeros(length(time), size(A, 1));
+state.running = zeros(length(time), size(A, 1));%RUNNING
+
+% Simulate the system dynamics over the specified time
+
+% Set initial state
+state.clean(1, :) = x0; 
+state.real(1, :) = x0; 
+state.estimate(1, :) = x0;
+state.running(1, :) = x0;%RUNNING
+
+output.clean(1, :) = C*state.clean(1, :)';
+output.real(1, :) = output.clean(1, :);
+output.filtered(1, :) = output.clean(1, :);
+output.running(1, :) = output.clean(1, :);%RUNNING
+
+% Filter data
+
+P = eye(6); % Initial Uncertainty
+% Q: Process Noise Covariance (Trust in Physics)
+% We use a small value to allow the model to drive the smoothness
+Q = eye(6) * (0.003^2); 
+% R: Measurement Noise Covariance (Trust in Sensors)
+% We set this higher than actual noise to filter out the jitters
+R = eye(3) * (0.01^2);
+
+% Running 
+window_size = 10; % You can adjust this window size
+
+for t = 2:length(time)
+
+%%% Perfect simulation
+
+% update theta
+theta_clean = state.clean(t - 1, 5);
+
+% Update states based on linear dynamics, this works for everything
+% except dx and dy
+delta_x_clean(1) = state.clean(t - 1, 2)*dt;
+delta_x_clean(3) = state.clean(t - 1, 4)*dt;
+delta_x_clean(5) = state.clean(t - 1, 6)*dt;
+delta_x_clean(6) = (r / I * control_input(t, 1) - r / I * control_input(t, 2)) * dt;
+
+% Now, non-linear part
+delta_x_clean(2) = (-sin(theta_clean)*(control_input(t, 1)+control_input(t, 2))/m) * dt;
+delta_x_clean(4) = (cos(theta_clean)*(control_input(t, 1)+control_input(t, 2))/m - g) * dt;
+
+
+% Lastly, updating states
+state.clean(t, :) = state.clean(t-1, :) + delta_x_clean(:)';
+output.clean(t, :) = (C * state.clean(t, :)')';
+
+%%% Real-world simulation
+
+% update theta
+theta_real = state.real(t - 1, 5);
+
+% Update states based on linear dynamics, this works for everything
+% except dx and dy
+delta_x_real(1) = state.real(t - 1, 2)*dt;
+delta_x_real(3) = state.real(t - 1, 4)*dt;
+delta_x_real(5) = state.real(t - 1, 6)*dt;
+delta_x_real(6) = (r / I * control_input(t, 1) - r / I * control_input(t, 2)) * dt;
+
+% Now, non-linear part
+delta_x_real(2) = (-sin(theta_real)*(control_input(t, 1)+control_input(t, 2))/m) * dt;
+delta_x_real(4) = (cos(theta_real)*(control_input(t, 1)+control_input(t, 2))/m - g) * dt;
+
+% getting all the noise characteristics
+state_noise = noise_data.state_noise_amp * randn(1, size(A, 1));
+output_noise = noise_data.output_noise_amp * randn(1, size(C, 1));
+
+state.real(t, :) = state.real(t - 1, :) + delta_x_real(:)' + state_noise;
+output.real(t, :) = (C*state.real(t, :)')' + output_noise;
+
+%%% Filter
+% Filter uses perfect physics and sensor measurements, but we do not pass
+% real state to it.
+
+% PREDICTION STEP
+
+% update theta
+theta_estimate = state.estimate(t - 1, 5);
+
+% Update states based on linear dynamics, this works for everything
+% except dx and dy
+delta_x_estimate(1) = state.estimate(t - 1, 2)*dt;
+delta_x_estimate(3) = state.estimate(t - 1, 4)*dt;
+delta_x_estimate(5) = state.estimate(t - 1, 6)*dt;
+delta_x_estimate(6) = (r / I * control_input(t, 1) - r / I * control_input(t, 2)) * dt;
+
+% Now, non-linear part
+delta_x_estimate(2) = (-sin(theta_estimate)*(control_input(t, 1)+control_input(t, 2))/m) * dt;
+delta_x_estimate(4) = (cos(theta_estimate)*(control_input(t, 1)+control_input(t, 2))/m - g) * dt;
+
+state.estimate(t, :) = state.estimate(t - 1, :) + delta_x_estimate(:)';
+
+% Predict covariance
+
+F = eye(6) + dt * [0 1 0 0 0 0;
+0 0 0 0 -cos(theta_estimate)*(control_input(t, 1)+control_input(t, 2))/m 0;
+0 0 0 1 0 0;
+0 0 0 0 -sin(theta_estimate)*(control_input(t, 1)+control_input(t, 2))/m 0;
+0 0 0 0 0 1;
+0 0 0 0 0 0];
+
+P_prediction = F * P * F' + Q;
+
+% CORRECTION STEP
+
+% 1. Calculate Measurement Residual 
+measurement_residual = output.real(t, :)' - C * state.estimate(t, :)';
+measurement_residual(2) = mod(measurement_residual(2) + pi, 2*pi) - pi;
+
+% 2. Calculate Kalman Gain
+S = C * P_prediction * C' + R;
+K = P_prediction * C' / S;
+
+% 3. Update State Estimate
+state.estimate(t, :) = state.estimate(t, :) + (K * measurement_residual)';
+output.filtered(t, :) = C * state.estimate(t, :)';
+
+% 4. Update Covariance
+P = (eye(6) - K * C) * P_prediction;
+
+
+% RUNNING 
+% Determine the start of the window
+window_start = max(1, t - window_size);
+
+% Average the noisy measurements ('real' outputs) over the window
+output.running(t, :) = mean(output.real(window_start:t, :), 1);
+
+% update theta
+theta_running = output.running(t, 2);
+
+state.running(t, 3) = output.running(t, 1); % Overwrite y (State 3)
+state.running(t, 5) = output.running(t, 2); % Overwrite theta (State 5)
+state.running(t, 6) = output.running(t, 3); % Overwrite theta_dot (State 6)
+
+% For the states, we apply the same averaging to the noisy running states
+% Update states based on linear dynamics, this works for everything
+% except dx and dy
+delta_x_running(1) = state.running(t-1, 2) * dt;
+
+% Now, non-linear part
+delta_x_running(2) = (-sin(theta_running)*(control_input(t, 1)+control_input(t, 2))/m) * dt;
+delta_x_running(4) = (cos(theta_running)*(control_input(t, 1)+control_input(t, 2))/m - g) * dt;
+
+state.running(t, [1 2 4]) = state.running(t - 1, [1 2 4]) + delta_x_running([1 2 4]);
+
+end
+
+
+%RUNNING
+errors.output_clean_VS_running_total = output.running - output.clean;
+errors.states_real_VS_running = state.real - state.running;
+
+errors.output_clean_VS_real_total = output.real - output.clean;
+errors.output_clean_VS_filtered_total = output.filtered - output.clean;
+errors.output_real_VS_filtered_total = output.filtered - output.real;
+
+errors.states_clean_VS_real_total = state.real - state.clean;
+errors.states_real_VS_estimate = state.real - state.estimate;
+errors.state_real_VS_output_real = output.real - state.real(:, [3, 5, 6]);
+errors.state_real_VS_output_filtered = output.filtered - state.real(:, [3, 5, 6]);
+
+% Calculate the Mean Squared Error for each column (state variable)
+num_states = size(errors.states_real_VS_estimate, 2);
+rmse_values = zeros(1, num_states);
+rmse_running = zeros(1, num_states);
+
+
+for i = 1:num_states
+% RMSE = sqrt(mean(error^2))
+rmse_values(i) = sqrt(mean(errors.states_real_VS_estimate(:, i).^2));
+%RUNNING
+rmse_running(i) = sqrt(mean(errors.states_real_VS_running(:, i).^2));
+end
+
+rmse_unfiltered = zeros(1, 3);
+
+for i = 1:3
+rmse_unfiltered(i) = sqrt(mean(errors.state_real_VS_output_real(:, i).^2));
+end
+
+% Store the RMSE values in the errors structure
+
+% state variables are typically: [x, dx, y, dy, theta, dtheta]
+errors.rmse_states = rmse_values;
+%RUNNING
+errors.rmse_running = rmse_running;
+
+errors.rmse_unfiltered = rmse_unfiltered;
+end
 	\end{lstlisting}
 	
-	\subsection{robustness.m}
+	\section{robustness.m}
 	\begin{lstlisting}[style=MyMatlabStyle]
-		function [rmse_matrix, noise_matrix, divergence_data, rmse_matrix_running] = robustness(rotor_data, control_input, time, initial_state, noise_data_base)
-		% ROBUSTNESS - Run robustness tests and return data for plotting
-		% Returns: rmse_matrix (Kalman), noise_matrix, divergence_data, rmse_matrix_running (Running)
-		
-		fprintf('\n=== Running Robustness Analysis ===\n');
-		
-		% Define 4 noise cases (Cases 1-4)
-		noise_cases = [
-		0.0015, 0.01; % Case 1: Optimal
-		0.003,  0.02; % Case 2: Regular
-		0.015,  0.1;  % Case 3: High noise
-		0.03,   0.2   % Case 4: Very high noise
-		];
-		
-		num_cases = size(noise_cases, 1);
-		rmse_matrix = zeros(num_cases, 6);
-		rmse_matrix_running = zeros(num_cases, 6); % NEW: Store running filter RMSE
-		noise_matrix = noise_cases;
-		
-		% Run simulations for Cases 1-4
-		for case_num = 1:num_cases
-		noise_data.state_noise_amp = noise_cases(case_num, 1);
-		noise_data.output_noise_amp = noise_cases(case_num, 2);
-		
-		[~, ~, errors] = simulation_quadrotor(rotor_data, control_input, noise_data, time, initial_state);
-		
-		rmse_matrix(case_num, :) = errors.rmse_states;
-		rmse_matrix_running(case_num, :) = errors.rmse_running; % NEW
-		
-		fprintf('Case %d RMSE (Kalman): ', case_num);
-		fprintf('%.4f ', errors.rmse_states);
-		fprintf('\n');
-		end
-		
-		% Run divergence analysis
-		divergence_data = find_divergence_individual_states(rotor_data, control_input, time, initial_state, noise_data_base);
-		
-		fprintf('\n=== Analysis Complete === \n');
-		end
-		
-		%% ================= HELPER FUNCTION - TRACKS INDIVIDUAL STATE DIVERGENCE =================
-		function div_data = find_divergence_individual_states(rotor_data, control_input, time, initial_state, noise_data_base)
-		base_noise = [noise_data_base.state_noise_amp, noise_data_base.output_noise_amp]; % Base noise levels
-		max_multiplier = 50;
-		multiplier = 0.2; 
-		
-		div_data.multipliers = [];
-		div_data.rmse_values = [];          % Kalman RMSE history
-		div_data.rmse_values_running = [];  % NEW: Running RMSE history
-		
-		% State names
-		state_names = {'x', 'dx', 'y', 'dy', 'theta', 'dtheta'};
-		display_names = {'x', 'dx', 'y', 'dy', 'θ', 'dθ'};
-		div_data.state_names = state_names;
-		div_data.display_names = display_names;
-		
-		% Initialize divergence tracking for BOTH filters
-		for i = 1:6
-		% Kalman Tracking
-		div_data.(['div_point_' state_names{i}]) = 0;
-		div_data.(['actually_diverged_' state_names{i}]) = false;
-		div_data.(['threshold_' state_names{i}]) = 0;
-		
-		% NEW: Running Filter Tracking
-		div_data.(['div_point_running_' state_names{i}]) = 0;
-		div_data.(['actually_diverged_running_' state_names{i}]) = false;
-		end
-		
-		% Thresholds (Shared between filters)
-		thresholds = [5.0, 1.0, 0.2, 0.2, 0.2, 0.1];  
-		for i = 1:6
-		div_data.(['threshold_' state_names{i}]) = thresholds(i);
-		end
-		
-		fprintf('\n--- Starting Dual-Filter Divergence Analysis ---\n');
-		
-		iteration = 0;
-		while multiplier <= max_multiplier
-		iteration = iteration + 1;
-		noise_data.state_noise_amp = base_noise(1) * multiplier;
-		noise_data.output_noise_amp = base_noise(2) * multiplier;
-		
-		[~, ~, errors] = simulation_quadrotor(rotor_data, control_input, noise_data, time, initial_state);
-		
-		div_data.multipliers(end+1) = multiplier;
-		div_data.rmse_values(end+1, :) = errors.rmse_states;
-		div_data.rmse_values_running(end+1, :) = errors.rmse_running; % NEW
-		
-		% Check EACH STATE for divergence (Kalman & Running)
-		for state_idx = 1:6
-		threshold = thresholds(state_idx);
-		s_name = state_names{state_idx};
-		
-		% 1. Check Kalman
-		if errors.rmse_states(state_idx) > threshold
-		if ~div_data.(['actually_diverged_' s_name])
-		div_data.(['actually_diverged_' s_name]) = true;
-		div_data.(['div_point_' s_name]) = multiplier;
-		fprintf('  [Kalman]  %s diverged at %.1fx\n', display_names{state_idx}, multiplier);
-		end
-		end
-		
-		% 2. Check Running (NEW)
-		if errors.rmse_running(state_idx) > threshold
-		if ~div_data.(['actually_diverged_running_' s_name])
-		div_data.(['actually_diverged_running_' s_name]) = true;
-		div_data.(['div_point_running_' s_name]) = multiplier;
-		fprintf('  [Running] %s diverged at %.1fx\n', display_names{state_idx}, multiplier);
-		end
-		end
-		end
-		
-		% Progress
-		if mod(iteration, 10) == 0
-		fprintf('  Progress: %.1f/%.1f\n', multiplier, max_multiplier);
-		end
-		
-		% Early exit: Only if BOTH filters have failed on ALL states
-		all_diverged = true;
-		for state_idx = 1:6
-		s_name = state_names{state_idx};
-		if ~div_data.(['actually_diverged_' s_name]) || ~div_data.(['actually_diverged_running_' s_name])
-		all_diverged = false;
-		break;
-		end
-		end
-		
-		if all_diverged
-		fprintf('  All states in both filters diverged. Stopping.\n');
-		break;
-		end
-		
-		multiplier = multiplier + 0.2;
-		end
-		
-		% Cleanup: Set stable states to max_tested
-		max_tested = max(div_data.multipliers);
-		div_data.max_multiplier_tested = max_tested;
-		
-		for state_idx = 1:6
-		s_name = state_names{state_idx};
-		if ~div_data.(['actually_diverged_' s_name])
-		div_data.(['div_point_' s_name]) = max_tested;
-		end
-		if ~div_data.(['actually_diverged_running_' s_name])
-		div_data.(['div_point_running_' s_name]) = max_tested;
-		end
-		end
-		end
+function [rmse_matrix, noise_matrix, divergence_data, rmse_matrix_running] = robustness(rotor_data, control_input, time, initial_state, noise_data_base)
+% ROBUSTNESS - Run robustness tests and return data for plotting
+% Returns: rmse_matrix (Kalman), noise_matrix, divergence_data, rmse_matrix_running (Running)
+
+fprintf('\n=== Running Robustness Analysis ===\n');
+
+% Define 4 noise cases (Cases 1-4)
+noise_cases = [
+0.0015, 0.01; % Case 1: Optimal
+0.003,  0.02; % Case 2: Regular
+0.015,  0.1;  % Case 3: High noise
+0.03,   0.2   % Case 4: Very high noise
+];
+
+num_cases = size(noise_cases, 1);
+rmse_matrix = zeros(num_cases, 6);
+rmse_matrix_running = zeros(num_cases, 6); % NEW: Store running filter RMSE
+noise_matrix = noise_cases;
+
+% Run simulations for Cases 1-4
+for case_num = 1:num_cases
+noise_data.state_noise_amp = noise_cases(case_num, 1);
+noise_data.output_noise_amp = noise_cases(case_num, 2);
+
+[~, ~, errors] = simulation_quadrotor(rotor_data, control_input, noise_data, time, initial_state);
+
+rmse_matrix(case_num, :) = errors.rmse_states;
+rmse_matrix_running(case_num, :) = errors.rmse_running; % NEW
+
+fprintf('Case %d RMSE (Kalman): ', case_num);
+fprintf('%.4f ', errors.rmse_states);
+fprintf('\n');
+end
+
+% Run divergence analysis
+divergence_data = find_divergence_individual_states(rotor_data, control_input, time, initial_state, noise_data_base);
+
+fprintf('\n=== Analysis Complete === \n');
+end
+
+%% ================= HELPER FUNCTION - TRACKS INDIVIDUAL STATE DIVERGENCE =================
+function div_data = find_divergence_individual_states(rotor_data, control_input, time, initial_state, noise_data_base)
+base_noise = [noise_data_base.state_noise_amp, noise_data_base.output_noise_amp]; % Base noise levels
+max_multiplier = 50;
+multiplier = 0.2; 
+
+div_data.multipliers = [];
+div_data.rmse_values = [];          % Kalman RMSE history
+div_data.rmse_values_running = [];  % NEW: Running RMSE history
+
+% State names
+state_names = {'x', 'dx', 'y', 'dy', 'theta', 'dtheta'};
+display_names = {'x', 'dx', 'y', 'dy', 'θ', 'dθ'};
+div_data.state_names = state_names;
+div_data.display_names = display_names;
+
+% Initialize divergence tracking for BOTH filters
+for i = 1:6
+% Kalman Tracking
+div_data.(['div_point_' state_names{i}]) = 0;
+div_data.(['actually_diverged_' state_names{i}]) = false;
+div_data.(['threshold_' state_names{i}]) = 0;
+
+% NEW: Running Filter Tracking
+div_data.(['div_point_running_' state_names{i}]) = 0;
+div_data.(['actually_diverged_running_' state_names{i}]) = false;
+end
+
+% Thresholds (Shared between filters)
+thresholds = [5.0, 1.0, 0.2, 0.2, 0.2, 0.1];  
+for i = 1:6
+div_data.(['threshold_' state_names{i}]) = thresholds(i);
+end
+
+fprintf('\n--- Starting Dual-Filter Divergence Analysis ---\n');
+
+iteration = 0;
+while multiplier <= max_multiplier
+iteration = iteration + 1;
+noise_data.state_noise_amp = base_noise(1) * multiplier;
+noise_data.output_noise_amp = base_noise(2) * multiplier;
+
+[~, ~, errors] = simulation_quadrotor(rotor_data, control_input, noise_data, time, initial_state);
+
+div_data.multipliers(end+1) = multiplier;
+div_data.rmse_values(end+1, :) = errors.rmse_states;
+div_data.rmse_values_running(end+1, :) = errors.rmse_running; % NEW
+
+% Check EACH STATE for divergence (Kalman & Running)
+for state_idx = 1:6
+threshold = thresholds(state_idx);
+s_name = state_names{state_idx};
+
+% 1. Check Kalman
+if errors.rmse_states(state_idx) > threshold
+if ~div_data.(['actually_diverged_' s_name])
+div_data.(['actually_diverged_' s_name]) = true;
+div_data.(['div_point_' s_name]) = multiplier;
+fprintf('  [Kalman]  %s diverged at %.1fx\n', display_names{state_idx}, multiplier);
+end
+end
+
+% 2. Check Running (NEW)
+if errors.rmse_running(state_idx) > threshold
+if ~div_data.(['actually_diverged_running_' s_name])
+div_data.(['actually_diverged_running_' s_name]) = true;
+div_data.(['div_point_running_' s_name]) = multiplier;
+fprintf('  [Running] %s diverged at %.1fx\n', display_names{state_idx}, multiplier);
+end
+end
+end
+
+% Progress
+if mod(iteration, 10) == 0
+fprintf('  Progress: %.1f/%.1f\n', multiplier, max_multiplier);
+end
+
+% Early exit: Only if BOTH filters have failed on ALL states
+all_diverged = true;
+for state_idx = 1:6
+s_name = state_names{state_idx};
+if ~div_data.(['actually_diverged_' s_name]) || ~div_data.(['actually_diverged_running_' s_name])
+all_diverged = false;
+break;
+end
+end
+
+if all_diverged
+fprintf('  All states in both filters diverged. Stopping.\n');
+break;
+end
+
+multiplier = multiplier + 0.2;
+end
+
+% Cleanup: Set stable states to max_tested
+max_tested = max(div_data.multipliers);
+div_data.max_multiplier_tested = max_tested;
+
+for state_idx = 1:6
+s_name = state_names{state_idx};
+if ~div_data.(['actually_diverged_' s_name])
+div_data.(['div_point_' s_name]) = max_tested;
+end
+if ~div_data.(['actually_diverged_running_' s_name])
+div_data.(['div_point_running_' s_name]) = max_tested;
+end
+end
+end
 	\end{lstlisting}
 	
 \end{document}
