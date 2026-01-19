@@ -1,0 +1,20 @@
+\contentsline {section}{Introduction}{2}{}%
+\contentsline {section}{System modeling}{2}{}%
+\contentsline {section}{Quadcopter definition}{3}{}%
+\contentsline {section}{Clean simulation}{5}{}%
+\contentsline {section}{Real-World Trajectory}{6}{}%
+\contentsline {section}{Extended Kalman Filter Design}{7}{}%
+\contentsline {subsection}{Jacobian for Covariance Propagation}{8}{}%
+\contentsline {subsection}{Prediction Step}{10}{}%
+\contentsline {subsection}{Correction Step}{11}{}%
+\contentsline {section}{Running Mean Filter}{12}{}%
+\contentsline {section}{Results \& Visualization}{14}{}%
+\contentsline {subsection}{Analysis of Estimation Performance}{30}{}%
+\contentsline {subsection}{Robustness Testing Methodology}{31}{}%
+\contentsline {subsection}{Robustness Analysis Conclusions}{32}{}%
+\contentsline {section}{Team member Contribution}{33}{}%
+\contentsline {subsection}{Formal Roles}{33}{}%
+\contentsline {subsection}{Actual Tasks}{33}{}%
+\contentsline {section}{Planar\_Quadrotor.m}{36}{}%
+\contentsline {section}{simulation\_quadrotor.m}{40}{}%
+\contentsline {section}{robustness.m}{49}{}%

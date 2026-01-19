@@ -27,7 +27,7 @@
 
 % Specify paper size
 \usepackage[pass, letterpaper]{geometry}
-
+\setcounter{tocdepth}{2}
 % Code Listing Style Definition
 \definecolor{codegreen}{rgb}{0,0.6,0}
 \definecolor{codegray}{rgb}{0.5,0.5,0.5}
@@ -64,6 +64,8 @@
 \begin{document}
 	\maketitle
 	
+	\tableofcontents
+	\newpage
 	\section{Introduction}
 	
 	The aim of this project is to implement an Extended Kalman Filter (EKF) to estimate the movement of a 2D planar quadrotor (fig. \ref{fig:quadrotor_diagram}) utilizing noisy sensor measurements.
@@ -78,13 +80,11 @@
 	\section{System modeling}
 	
 	The movement of the quadrotor is governed by the following nonlinear equations of motion:
-
 \begin{align}
 	m\ddot{x} &= -(u_1 + u_2)\sin\theta \label{eq:x_dyn} \\
 	m\ddot{y} &= (u_1 + u_2)\cos\theta - mg \label{eq:y_dyn} \\
 	I\ddot{\theta} &= r(u_1 - u_2) \label{eq:theta_dyn}
 \end{align}
-	
 	\noindent where:
 	\begin{itemize}
 		\item $m$: mass of the quadrotor
@@ -95,7 +95,6 @@
 	\end{itemize}
 	
 	This would imply that the system state is represented by a six-element vector $\mathbf{x}$, and the control input is represented by a two-element vector $\mathbf{u}$:
-
 	\begin{equation}
 		\mathbf{x} = 
 		\begin{bmatrix}
@@ -109,31 +108,31 @@
 	
 	\section{Quadcopter definition}
 	
-	The quadrotor system parameters were initialized with a mass $m = 0.5 \text{ kg}$, a rotor arm length $r = 0.15 \text{ m}$, and a moment of inertia $I = 0.005 \text{ kg} \cdot \text{m}^2$. The simulation utilizes a time step of $dt = 0.01 \text{ s}$ under standard gravitational acceleration $g = 9.81 \text{ m/s}^2$2. The initial conditions for the simulation were set with an orientation angle $\theta = 0 \text{ rad}$, and baseline rotor thrust forces $u_1 = 5 \text{ N}$ and $u_2 = 5 \text{ N}$.
+	The quadrotor system parameters were initialized with a mass $m = 0.5 \text{ kg}$, a rotor arm length $r = 0.15 \text{ m}$, and a moment of inertia $I = 0.005 \text{ kg} \cdot \text{m}^2$. The simulation utilizes a time step of $dt = 0.01 \text{ s}$ under standard gravitational acceleration $g = 9.81 \text{ m/s}^2$2. The initial conditions for the simulation were set with an orientation angle $\theta = 0 \text{ rad}$, and baseline rotor thrust forces $u_1 = 5 \text{ N}$ and $u_2 = 5 \text{ N}$ (Appendix A, lines 8–15).
 	
-	Four scenarios for control inputs were chosen: 
+	Four scenarios for control inputs were chosen (Appendix A, lines 53-96): 
 	
 	\begin{enumerate}
-		\item Flying up. For the simplest case, both rotors are set to 3 N. 
-		\item Recovery from horizontal flight. To do this, quadrotor system must rotate to have significant vertical thrust component. Three control stages are:
+		\item Flying up. For the simplest case, both rotors are set to 3 N. ( fig. \ref{fig:trajectory-basic}) 
+		\item Recovery from horizontal flight (fig. \ref{fig:trajectory-horizontal}). To do this, quadrotor system must rotate to have significant vertical thrust component. Three control stages are:
 		\begin{enumerate}
 			\item Initiate rotation. For 1.1 s create rotational moment by 0.05 N thrust difference between the rotors (4.05 N, 4.0 N).
 			\item Stop the rotation. For the next 1.1 s we slow down the rotation with the opposing thrust moment (4.0 N, 4.05 N).
 			\item Increase altitude. For the rest of the simulation time we pull up with same thrust of 4 N on both rotors.
 		\end{enumerate}
-		\item 360 degree roll. Most complicated control-wise, due to the choice of long rotation. Altitude loss is significant. Four control stages are:
+		\item 360 degree roll (fig. \ref{fig:trajectory-roll}). Most complicated control-wise, due to the choice of long rotation. Altitude loss is significant. Four control stages are:
 		\begin{enumerate}
 			\item Initiate rotation. A small thrust difference is applied for the first 2 seconds (4.04 N, 4 N).
 			\item Let it rotate. For a second, the system is set to 0 thrust to let it rotate freely.
 			\item Stop the rotation. For another 2 seconds, we slow down the rotation, only using small thrust to avoid increasing falling speed (0 N, 0.04 N).
 			\item Recover lost altitude. After 5 seconds of accurate controls, we set both rotors to their maximum (5 N) to avoid collision with the ground.
 		\end{enumerate}
-		\item Straight fall recovery. Almost identical to the first case, however slightly higher thrust is assumed (3.2 N on both rotors).
+		\item Straight fall recovery (fig. \ref{fig:trajectory-fall}). Almost identical to the first case, however slightly higher thrust is assumed (3.2 N on both rotors).
 	\end{enumerate}
 	
 	Small thrust variation of the rotor is inherently periodic and is recreated using simple trigonometric functions (cosine for rotor u1, sine for rotor u2).
 	
-	Moreover, a unique set of initial conditions was defined for each case:
+	Moreover, a unique set of initial conditions was defined for each case (Appendix A, lines 99-102):
 	\begin{enumerate}
 		\item Zero velocity in both directions, system is 1 m above the ground, no rotation.
 		\item System is assumed to have horizontal speed of 3 m/s at 10 m altitude, rotors' thrust is parallel to the ground.
@@ -143,24 +142,24 @@
 
     \section{Clean simulation}
 	
-	Equations \ref{eq:x_dyn}-\ref{eq:theta_dyn} represent perfect conditions as they do not account for process noise. The state vector for this ideal trajectory is designated as \texttt{state.clean} in the code. This ensures the prediction adheres to the actual physical dynamics.
+	Equations \ref{eq:x_dyn}-\ref{eq:theta_dyn} represent perfect conditions as they do not account for process noise. The state vector for this ideal trajectory is designated as \texttt{state.clean} in the code (Appendix B, line 24). This ensures the prediction adheres to the actual physical dynamics.
 	
-	The clean simulation utilizes first-order Euler integration to propagate the system state forward in time. At each time step $t$, the state increments are computed based on the previous state vector $\mathbf{x}_{t-1}$ and the current control inputs. The positional and angular updates are derived linearly from the previous velocities:
+	The clean simulation utilizes first-order Euler integration to propagate the system state forward in time. At each time step $t$, the state increments are computed based on the previous state vector $\mathbf{x}_{t-1}$ and the current control inputs (Appendix B, lines 60-71). The positional and angular updates are derived linearly from the previous velocities:
 	\begin{equation}
 		\Delta x = \dot{x}_{t-1} \Delta t, \quad \Delta y = \dot{y}_{t-1} \Delta t, \quad \Delta \theta = \dot{\theta}_{t-1} \Delta t\label{eq:euler_kinematics}
-	\end{equation}The changes in linear and angular velocities are calculated by discretizing the dynamic equations of motion (Eq.\ref{eq:x_dyn}-\ref{eq:theta_dyn}). These updates account for the non-linear coupling introduced by the quadrotor's orientation $\theta$:
-	
+	\end{equation}
+	The changes in linear and angular velocities are calculated by discretizing the dynamic equations of motion (Eq.\ref{eq:x_dyn}-\ref{eq:theta_dyn}). These updates account for the non-linear coupling introduced by the quadrotor's orientation $\theta$:
 	\begin{align}
 		\Delta \dot{x} &= -\frac{(u_1 + u_2)}{m}\sin(\theta_{t-1}) \Delta t \label{eq:euler_dx} \\
 		\Delta \dot{y} &= \left( \frac{(u_1 + u_2)}{m}\cos(\theta_{t-1}) - g \right) \Delta t \label{eq:euler_dy} \\
 		\Delta \dot{\theta} &= \frac{r}{I}(u_1 - u_2) \Delta t \label{eq:euler_dtheta}
 	\end{align}
 	
-	Finally, the state vector is updated by adding these increments to the previous state, $\mathbf{x}_t = \mathbf{x}_{t-1} + \Delta \mathbf{x}$, and the ideal sensor output is computed as $\mathbf{y}_t = C \mathbf{x}_t$.
+	Finally, the state vector is updated by adding these increments to the previous state, $\mathbf{x}_t = \mathbf{x}_{t-1} + \Delta \mathbf{x}$, and the ideal sensor output is computed as $\mathbf{y}_t = C \mathbf{x}_t$ (Appendix B, lines 75, 76).
 	
 	\section{Real-World Trajectory}
 	
-	The real-world trajectory (\texttt{state.real}) differs from the perfect trajectory solely through the introduction of process and measurement noise. It is assumed that both process and measurement noise follow a \textbf{Gaussian} distribution, which is implemented in the simulation using the MATLAB function \texttt{randn}. The stochastic properties are defined by their variances: the process noise variance is set to $0.003^2$, while the measurement noise variance is set to $0.01^2$.
+	The real-world trajectory (\texttt{state.real}) differs from the perfect trajectory solely through the introduction of process and measurement noise. It is assumed that both process and measurement noise follow a \textbf{Gaussian} distribution, which is implemented in the simulation using the MATLAB function \texttt{randn} (Appendix B, lines 95-96). The stochastic properties are defined by their variances: the process noise variance is set to $0.003^2$, while the measurement noise variance is set to $0.01^2$ (Appendix B, lines 47-50).
 	
 	The governing equations \ref{eq:x_dyn}-\ref{eq:theta_dyn} remain unchanged, with noise injected during the state update step. The true state evolution is modeled by adding a stochastic process noise vector $\mathbf{w}$ to the deterministic dynamics:
 	\begin{equation}
@@ -214,10 +213,7 @@
 		\frac{\partial \ddot{x}}{\partial \theta} = -\frac{\cos\theta}{m}(u_1 + u_2) \label{eq:partial_x} \\
 		\frac{\partial \ddot{y}}{\partial \theta} = -\frac{\sin\theta}{m}(u_1 + u_2) \label{eq:partial_y}
 	\end{align}
-
-	
-	The resulting Jacobian $A$ is:
-	
+	The resulting Jacobian $A$ is (Appendix A, lines 30-35):
 	\begin{equation}
 		A = \begin{bmatrix}
 			0 & 1 & 0 & 0 & 0 & 0 \\
@@ -228,9 +224,7 @@
 			0 & 0 & 0 & 0 & 0 & 0
 		\end{bmatrix}
 	\end{equation}
-	
 	The discrete-time state transition matrix $F$ used in the EKF is defined as $F = I + A \Delta t$, where $I$ represents the identity matrix and $A \Delta t$ represents the change over the time step.
-	
 	\begin{equation}
 		F = \begin{bmatrix} 
 			1 & \Delta t & 0 & 0 & 0 & 0 \\
@@ -241,9 +235,7 @@
 			0 & 0 & 0 & 0 & 0 & 1 \\
 		\end{bmatrix}
 	\end{equation}
-	
-	The measurement matrix $H$ (referred to as $C$ in code) is defined as:
-	
+	The measurement matrix $H$ (referred to as $C$ in code) (Appendix A, lines 41-43) is defined as:
 	\begin{equation}
 		H = C = \begin{bmatrix}
 			0 & 0 & 1 & 0 & 0 & 0 \\
@@ -251,7 +243,6 @@
 			0 & 0 & 0 & 0 & 0 & 1
 		\end{bmatrix}
 	\end{equation}
-	
 	The implementation follows a standard \textbf{predict–correct cycle} (fig. \ref{fig:ekfprinciple}), executing in real-time within the simulation loop.
 	
 	\subsection{Prediction Step}
@@ -259,11 +250,9 @@
 	First, the states are updated, and the estimate is stored as \texttt{state.estimate}.
 		
 	Following the state acquisition for the current timestep, the $F$ matrix is updated based on the current angle (\texttt{theta\_estimate}) and thrust (\texttt{control\_input}). This dependency characterizes the Extended Kalman Filter. The error covariance is then predicted:
-	
 	\begin{equation}
 		P_k^- = A_k P_{k-1} A_k^T + W_k Q_{k-1} W_k^T 
 	\end{equation}
-	
 	where $Q$ represents the confidence in the physics model.
 	
 	\subsection{Correction Step}
@@ -280,10 +269,9 @@
 		S &= C P_k^- C^T + R \\
 		K &= P_k^- C^T S^{-1} \label{eq:K}
 	\end{align}
-	
 	Process noise covariance Q and measurement noise covariance R were defined as $I \times 0.003^2$ and $I \times 0.01^2$, respectively. This effectively means that the filter is "perfectly tuned."
 	
-	Finally, the state and covariance matrices are updated to obtain the a posteriori estimates. The state estimate is corrected by adding the measurement residual, weighted by the Kalman gain $K$:
+	Finally, the state and covariance matrices are updated to obtain the posteriori estimates. The state estimate is corrected by adding the measurement residual, weighted by the Kalman gain $K$ (Appendix B, lines 145-146):
 	\begin{equation}
 		\hat{\mathbf{x}}_k = \hat{\mathbf{x}}_k^- + K_k \tilde{\mathbf{y}}_k\label{eq:ekf_state_update}
 	\end{equation}
@@ -292,12 +280,12 @@
 		P_k = (I - K_k C) P_k^-\label{eq:ekf_covariance_update}
 	\end{equation}
 	
-	
+
 	\section{Running Mean Filter}
 	
-	In order to compare the performance of the EKF, the running mean filter was implemented. With the window size of 10, it simply averages the values from the last 10 time steps when processing sensor measurements. It then uses this data, to predict the change in states.
+	In order to compare the performance of the EKF, the running mean filter was implemented. With the window size of 10 (Appendix B, line 53), it simply averages the values from the last 10 time steps when processing sensor measurements. It then uses this data, to predict the change in states.
 	
-	The running mean filter implementation employs a hybrid estimation strategy. First, a sliding window average is applied to the noisy sensor measurements to attenuate high-frequency jitters. For a window size $N$, the smoothed measurement vector $\bar{\mathbf{z}}_t$ is computed as the arithmetic mean of the past $N$ observations:
+	The running mean filter implementation employs a hybrid estimation strategy. First, a sliding window average is applied to the noisy sensor measurements to attenuate high-frequency jitters. For a window size $N$, the smoothed measurement vector $\bar{\mathbf{z}}_t$ is computed as the arithmetic mean of the past $N$ observations (Appendix B, lines 162-164):
 	\begin{equation}
 		\bar{\mathbf{z}}_t = \frac{1}{N} \sum_{k=t-N+1}^{t} \mathbf{z}_k\label{eq:moving_average}
 	\end{equation}
@@ -308,7 +296,7 @@
 		\Delta \dot{x} &= -\frac{(u_1 + u_2)}{m}\sin(\theta_t) \Delta t \\
 		\Delta \dot{y} &= \left( \frac{(u_1 + u_2)}{m}\cos(\theta_t) - g \right) \Delta t
 	\end{align}
-	Finally, these computed increments are applied to update the estimates for the horizontal position and linear velocities.
+	Finally, these computed increments are applied to update the estimates for the horizontal position and linear velocities (Appendix B, lines 169–175).
 	
 	\section{Results \& Visualization}
 
@@ -740,7 +728,7 @@
 
 	\subsection{Analysis of Estimation Performance}
 	
-	The quantitative results presented in Table \ref{tab:rmse_results} demonstrate that the Extended Kalman Filter (EKF) significantly outperforms the running mean filter across all state variables. This performance gap is most pronounced in the unobserved states—specifically horizontal position ($x$), horizontal velocity ($\dot{x}$), and vertical velocity ($\dot{y}$). While the running mean filter achieves a Root Mean Square Error (RMSE) of 0.6632 m for the horizontal position, the EKF maintains an accuracy of 0.0417 m. This disparity arises because the running mean filter relies on a simplified kinematic propagation for unobserved states (Appendix B, lines 162–173), which lacks the corrective feedback mechanism found in the EKF’s state update equation (Eq. \ref{eq:ekf_state_update}).The EKF’s superior handling of nonlinearities is evident in the "Roll" scenario (Figure \ref{fig:trajectory-roll}). As the quadrotor undergoes a complete 360-degree rotation, the system dynamics become highly nonlinear due to the trigonometric coupling of the thrust vectors (Eq. \ref{eq:x_dyn}-\ref{eq:y_dyn}). The running mean filter, which simply smooths the sensor output (Eq. \ref{eq:moving_average}) and integrates the result, fails to account for the rapid changes in orientation, leading to the unbounded error growth observed in Figure \ref{fig:error-roll}. Conversely, the EKF updates its Jacobian matrix $F$ at every time step using the current state estimate (Appendix B, lines 108, 125-130), allowing it to accurately track the trajectory even during aggressive maneuvers.
+	The quantitative results presented in Table \ref{tab:rmse_results} demonstrate that the Extended Kalman Filter (EKF) significantly outperforms the running mean filter across all state variables. This performance gap is most pronounced in the unobserved states—specifically horizontal position ($x$), horizontal velocity ($\dot{x}$), and vertical velocity ($\dot{y}$). While the running mean filter achieves a Root Mean Square Error (RMSE) of 0.6632 m for the horizontal position, the EKF maintains an accuracy of 0.0417 m (fig. \ref{fig:error-horizontal}). This disparity arises because the running mean filter relies on a simplified kinematic propagation for unobserved states (Appendix B, lines 162–173), which lacks the corrective feedback mechanism found in the EKF’s state update equation (Eq. \ref{eq:ekf_state_update}).The EKF’s superior handling of nonlinearities is evident in the "Roll" scenario (Figure \ref{fig:trajectory-roll}). As the quadrotor undergoes a complete 360-degree rotation, the system dynamics become highly nonlinear due to the trigonometric coupling of the thrust vectors (Eq. \ref{eq:x_dyn}-\ref{eq:y_dyn}). The running mean filter, which simply smooths the sensor output (Eq. \ref{eq:moving_average}) and integrates the result, fails to account for the rapid changes in orientation, leading to the unbounded error growth observed in Figure \ref{fig:error-roll}. Conversely, the EKF updates its Jacobian matrix $F$ at every time step using the current state estimate (Appendix B, lines 108, 125-130), allowing it to accurately track the trajectory even during aggressive maneuvers.
 	
 	\subsection{Robustness Testing Methodology}
 	To evaluate the stability of the estimators under adverse conditions, a robustness analysis was conducted by systematically increasing the process and measurement noise levels. The testing procedure, implemented in robustness.m (Appendix C), applies a scalar multiplier to the baseline noise variances defined in the simulation (Appendix A, lines 112-113). The multiplier ranges from $0.2\times$ to $50\times$ the nominal values, effectively simulating sensor degradation and increasing environmental turbulence (Appendix C, lines 44-45).
@@ -748,7 +736,7 @@
 	To quantify the limits of stability, specific divergence thresholds were defined for each state variable. A filter is considered to have "diverged" when its Root Mean Square Error (RMSE) exceeds these pre-defined safety limits: $5.0 \text{ m}$ for horizontal position ($x$), $1.0 \text{ m/s}$ for horizontal velocity ($\dot{x}$), and $0.2$ for both vertical position ($y$) and vertical velocity ($\dot{y}$) (Appendix C, line 70). Tighter constraints were applied to the rotational states, with thresholds of $0.2 \text{ rad}$ for pitch angle ($\theta$) and $0.1 \text{ rad/s}$ for pitch rate ($\dot{\theta}$), reflecting the critical importance of attitude estimation for stable flight (Appendix C, line 70). The robustness loop iterates through increasing noise multipliers until these specific thresholds are breached, recording the multiplier value at which failure occurs (Appendix C, line 85).
 	
 	\subsection{Robustness Analysis Conclusions}
-	The response to increasing noise reveals a fundamental difference in filter architecture. As illustrated in the logarithmic growth plots (Figures \ref{fig:rmse-growth-log-basic}- \ref{fig:rmse-growth-log-fall}), the error in the EKF estimates grows linearly with the noise magnitude, maintaining stability even at high variance levels. In contrast, the running mean filter exhibits early divergence, particularly for the horizontal states ($x$ and $\dot{x}$).In the "Horizontal Recovery" scenario, the running mean’s estimation of $\dot{x}$ diverges significantly earlier than the EKF (Figure \ref{fig:rmse-growth-log-horizontal}). This is attributed to the integration of noisy orientation data without covariance tracking; the EKF mitigates this by weighing the theoretical model against the noisy measurements via the Kalman Gain $K$ (Eq. \ref{eq:measurement_residual}-\ref{eq:K}, Appendix B, line 142). The linear scale plots (Figures \ref{fig:rmse-growth-linear-basic}-\ref{fig:rmse-growth-linear-fall}) further confirm that while observed states ($y, \theta$) are relatively resilient in both filters due to direct sensor updates, the EKF provides a necessary layer of filtering that prevents high-frequency noise from corrupting the velocity estimates. Ultimately, the EKF proves to be the robust solution required for the nonlinear dynamics of the planar quadrotor. However, it is important to acknowledge the fact that the filter was perfectly tuned in all the tested scenarios, implying that tuning is a key to robust performance.
+	The response to increasing noise reveals a fundamental difference in filter architecture. As illustrated in the logarithmic growth plots (Figures \ref{fig:rmse-growth-log-basic}- \ref{fig:rmse-growth-log-fall}), the error in the EKF estimates grows linearly with the noise magnitude, maintaining stability even at high variance levels (figs. \ref{fig:rmse-ekf-basic} - \ref{fig:rmse-ekf-fall}). In contrast, the running mean filter exhibits early divergence, particularly for the horizontal states ($x$ and $\dot{x}$). In the "Horizontal Recovery" scenario, the running mean’s estimation of $\dot{x}$ diverges significantly earlier than the EKF (Figure \ref{fig:rmse-growth-log-horizontal}). This is attributed to the integration of noisy orientation data without covariance tracking; the EKF mitigates this by weighing the theoretical model against the noisy measurements via the Kalman Gain $K$ (Eq. \ref{eq:measurement_residual}-\ref{eq:K}, Appendix B, line 142). The linear scale plots (Figures \ref{fig:rmse-growth-linear-basic}-\ref{fig:rmse-growth-linear-fall}) further confirm that while observed states ($y, \theta$) are relatively resilient in both filters due to direct sensor updates, the EKF provides a necessary layer of filtering that prevents high-frequency noise from corrupting the velocity estimates. Ultimately, the EKF proves to be the robust solution required for the nonlinear dynamics of the planar quadrotor. However, it is important to acknowledge the fact that the filter was perfectly tuned in all the tested scenarios, implying that tuning is a key to robust performance.
 	
 	Seed 47 was used for any random number generation in the report. All code can be accessed at https://github.com/Arseni10Lk/Planar-Quadrotor
 	
@@ -767,7 +755,7 @@
 	\noindent Arseni Lysak: 
 	\begin{itemize}
 		\item Task assignment, deadline setting and organization.
-		\item Assistance with Github, Git, MATLAB and LaTeX.
+		\item Providing assistance with Github, Git, MATLAB and LaTeX.
 		\item Work review and corrections.
 		\item Real and Clean Simulation code with error calculation (but not RMSE).
 		\item Finalization of EKF implementation.
