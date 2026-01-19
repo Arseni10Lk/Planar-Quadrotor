@@ -6,7 +6,7 @@
 \contentsline {section}{Extended Kalman Filter Design}{8}{}%
 \contentsline {subsection}{Jacobian for Covariance Propagation}{9}{}%
 \contentsline {subsection}{Prediction Step}{11}{}%
-\contentsline {subsection}{Correction Step}{12}{}%
+\contentsline {subsection}{Correction Step}{11}{}%
 \contentsline {section}{Running Mean Filter}{13}{}%
 \contentsline {section}{Results \& Visualization}{15}{}%
 \contentsline {subsection}{Analysis of Estimation Performance}{31}{}%
