@@ -105,8 +105,27 @@
 			u_1 \\ u_2
 		\end{bmatrix}
 	\end{equation}
+
+	\noindent To complete the system model, the observation vector $\mathbf{z}$ is defined based on the onboard sensors. It is important to note that while a real-world \textbf{Inertial Measurement Unit (IMU)} measures linear acceleration and angular velocity—requiring fusion algorithms to estimate orientation—this simulation adopts a simplification where the IMU directly provides the pitch angle ($\theta$) and pitch rate ($\dot{\theta}$). Combined with an \textbf{altimeter} that measures vertical position ($y$), the observation model becomes a linear mapping of the state vector:
 	
-	\section{Quadrotor Definition}
+	\begin{equation}
+		\mathbf{z} = C\mathbf{x} = 
+		\begin{bmatrix}
+			0 & 0 & 1 & 0 & 0 & 0 \\
+			0 & 0 & 0 & 0 & 1 & 0 \\
+			0 & 0 & 0 & 0 & 0 & 1
+		\end{bmatrix}
+		\begin{bmatrix}
+			x \\ \dot{x} \\ y \\ \dot{y} \\ \theta \\ \dot{\theta}
+		\end{bmatrix}
+		=
+		\begin{bmatrix}
+			y \\ \theta \\ \dot{\theta}
+		\end{bmatrix}
+		\label{eq:observation_model}
+	\end{equation}
+	
+	\section{Quadcopter Definition}
 	
 	The quadrotor system parameters were initialized with a mass $m = 0.5 \text{ kg}$, a rotor arm length $r = 0.15 \text{ m}$, and a moment of inertia $I = 0.005 \text{ kg} \cdot \text{m}^2$. The simulation utilizes a time step of $dt = 0.01 \text{ s}$ under standard gravitational acceleration $g = 9.81 \text{ m/s}^2$. Baseline rotor thrust forces are $u_1 = 5 \text{ N}$ and $u_2 = 5 \text{ N}$ (Appendix A, lines 8-15).
 	
