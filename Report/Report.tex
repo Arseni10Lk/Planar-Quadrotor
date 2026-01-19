@@ -106,21 +106,21 @@
 		\end{bmatrix}
 	\end{equation}
 	
-	\section{Quadcopter definition}
+	\section{Quadcopter Definition}
 	
-	The quadrotor system parameters were initialized with a mass $m = 0.5 \text{ kg}$, a rotor arm length $r = 0.15 \text{ m}$, and a moment of inertia $I = 0.005 \text{ kg} \cdot \text{m}^2$. The simulation utilizes a time step of $dt = 0.01 \text{ s}$ under standard gravitational acceleration $g = 9.81 \text{ m/s}^2$2. The initial conditions for the simulation were set with an orientation angle $\theta = 0 \text{ rad}$, and baseline rotor thrust forces $u_1 = 5 \text{ N}$ and $u_2 = 5 \text{ N}$ (Appendix A, lines 8–15).
+	The quadrotor system parameters were initialized with a mass $m = 0.5 \text{ kg}$, a rotor arm length $r = 0.15 \text{ m}$, and a moment of inertia $I = 0.005 \text{ kg} \cdot \text{m}^2$. The simulation utilizes a time step of $dt = 0.01 \text{ s}$ under standard gravitational acceleration $g = 9.81 \text{ m/s}^2$2. The initial conditions for the simulation were set with an orientation angle $\theta = 0 \text{ rad}$, and baseline rotor thrust forces $u_1 = 5 \text{ N}$ and $u_2 = 5 \text{ N}$ (Appendix A, lines 8-15).
 	
 	Four scenarios for control inputs were chosen (Appendix A, lines 53-96): 
 	
 	\begin{enumerate}
-		\item Flying up. For the simplest case, both rotors are set to 3 N. ( fig. \ref{fig:trajectory-basic}) 
-		\item Recovery from horizontal flight (fig. \ref{fig:trajectory-horizontal}). To do this, quadrotor system must rotate to have significant vertical thrust component. Three control stages are:
+		\item Flying up. For the simplest case, both rotors are set to 3 N ( fig. \ref{fig:trajectory-basic}).
+		\item Recovery from horizontal flight (fig. \ref{fig:trajectory-horizontal}). To do this, the quadrotor system must rotate to have significant vertical thrust component. Three control stages are:
 		\begin{enumerate}
 			\item Initiate rotation. For 1.1 s create rotational moment by 0.05 N thrust difference between the rotors (4.05 N, 4.0 N).
 			\item Stop the rotation. For the next 1.1 s we slow down the rotation with the opposing thrust moment (4.0 N, 4.05 N).
 			\item Increase altitude. For the rest of the simulation time we pull up with same thrust of 4 N on both rotors.
 		\end{enumerate}
-		\item 360 degree roll (fig. \ref{fig:trajectory-roll}). Most complicated control-wise, due to the choice of long rotation. Altitude loss is significant. Four control stages are:
+		\item 360 degree roll (fig. \ref{fig:trajectory-roll}). This is the most complicated control-wise, due to the choice of long rotation. Altitude loss is significant. Four control stages are:
 		\begin{enumerate}
 			\item Initiate rotation. A small thrust difference is applied for the first 2 seconds (4.04 N, 4 N).
 			\item Let it rotate. For a second, the system is set to 0 thrust to let it rotate freely.
@@ -130,17 +130,17 @@
 		\item Straight fall recovery (fig. \ref{fig:trajectory-fall}). Almost identical to the first case, however slightly higher thrust is assumed (3.2 N on both rotors).
 	\end{enumerate}
 	
-	Small thrust variation of the rotor is inherently periodic and is recreated using simple trigonometric functions (cosine for rotor u1, sine for rotor u2).
+	The small thrust variation of the rotor is inherently periodic and is recreated using simple trigonometric functions (cosine for rotor $u_1$, sine for rotor $u_2$).
 	
 	Moreover, a unique set of initial conditions was defined for each case (Appendix A, lines 99-102):
 	\begin{enumerate}
 		\item Zero velocity in both directions, system is 1 m above the ground, no rotation.
-		\item System is assumed to have horizontal speed of 3 m/s at 10 m altitude, rotors' thrust is parallel to the ground.
+		\item The system is assumed to have a horizontal speed of 3 m/s at 10 m altitude, rotors' thrust is parallel to the ground.
 		\item To make the long rotation possible, high vertical speed and altitude (5 m/s and 50 m respectively) are assumed. No initial rotational speed or system tilt.
 		\item Negative horizontal and vertical velocities (-1 m/s and -3 m/s respectively), altitude of 15 m. Quadrotor system is initially tilted down by around 18 degrees to align rotor thrust direction with total velocity vector.
 	\end{enumerate}
 
-    \section{Clean simulation}
+    \section{Clean Simulation}
 	
 	Equations \ref{eq:x_dyn}-\ref{eq:theta_dyn} represent perfect conditions as they do not account for process noise. The state vector for this ideal trajectory is designated as \texttt{state.clean} in the code (Appendix B, line 24). This ensures the prediction adheres to the actual physical dynamics.
 	
@@ -189,7 +189,7 @@
 	\subsection{Jacobian for Covariance Propagation}
 	
 	
-	\noindent To estimate a process with non-linear difference and measurement relationships,the system is modeled using non-linear functions $f$ and $h$ \autocite{welch2002kalman}:
+	\noindent To estimate a process with non-linear difference and measurement relationships, the system is modeled using non-linear functions $f$ and $h$ \autocite{welch2002kalman}:
 	\begin{align}
 		\mathbf{x}_{k+1} &= f(\mathbf{x}_k, \mathbf{u}_k) + \mathbf{w}_k \label{eq:state_nonlinear} \\
 		\mathbf{z}_k &= h(\mathbf{x}_k) + \mathbf{v}_k \label{eq:meas_nonlinear}
@@ -269,7 +269,7 @@
 		S &= C P_k^- C^T + R \\
 		K &= P_k^- C^T S^{-1} \label{eq:K}
 	\end{align}
-	Process noise covariance Q and measurement noise covariance R were defined as $I \times 0.003^2$ and $I \times 0.01^2$, respectively. This effectively means that the filter is "perfectly tuned."
+	The process noise covariance $Q$ and measurement noise covariance $R$ were defined as $I \times 0.003^2$ and $I \times 0.01^2$, respectively. This effectively means that the filter is "perfectly tuned."
 	
 	Finally, the state and covariance matrices are updated to obtain the posteriori estimates. The state estimate is corrected by adding the measurement residual, weighted by the Kalman gain $K$ (Appendix B, lines 145-146):
 	\begin{equation}
@@ -283,7 +283,7 @@
 
 	\section{Running Mean Filter}
 	
-	In order to compare the performance of the EKF, the running mean filter was implemented. With the window size of 10 (Appendix B, line 53), it simply averages the values from the last 10 time steps when processing sensor measurements. It then uses this data, to predict the change in states.
+	In order to compare the performance of the EKF, the running mean filter was implemented. With a window size of 10 (Appendix B, line 53), it simply averages the values from the last 10 time steps when processing sensor measurements. It then uses this data to predict the change in states.
 	
 	The running mean filter implementation employs a hybrid estimation strategy. First, a sliding window average is applied to the noisy sensor measurements to attenuate high-frequency jitters. For a window size $N$, the smoothed measurement vector $\bar{\mathbf{z}}_t$ is computed as the arithmetic mean of the past $N$ observations (Appendix B, lines 162-164):
 	\begin{equation}
@@ -384,12 +384,12 @@
 	
 	% --- Main Caption with ALL original text included ---
 	\caption{State variables over time for the basic scenario. 
-		(a) Horizontal position ($x$) small lateral displacement is caused by slight thrust asymmetry that induces a small rotation of the vehicle. 
-		(b) Horizontal velocity ($\dot{x}$) oscillates around zero, indicating minor alternating horizontal accelerations. 
-		(c) Vertical position ($y$) shows continuous ascent with no reversal in direction. 
-		(d) Vertical velocity ($\dot{y}$) remains positive and increases smoothly, confirming upward motion. 
-		(e) Pitch angle ($\theta$) positive and negative values represent alternating nose-up and nose-down orientations. 
-		(f) Pitch rate ($\dot{\theta}$) zero crossings correspond to changes in rotational direction.}
+		(a): Horizontal position ($x$): a small lateral displacement is caused by slight thrust asymmetry that induces a small rotation of the vehicle. 
+		(b): Horizontal velocity ($\dot{x}$): oscillates around zero, indicating minor alternating horizontal accelerations. 
+		(c): Vertical position ($y$): shows continuous ascent with no reversal in direction. 
+		(d): Vertical velocity ($\dot{y}$): remains positive and increases smoothly, confirming upward motion. 
+		(e): Pitch angle ($\theta$): positive and negative values represent alternating nose-up and nose-down orientations. 
+		(f): Pitch rate ($\dot{\theta}$): zero crossings correspond to changes in rotational direction.}
 	\label{fig:basic_scenario_grid}
 \end{figure}
 
@@ -448,12 +448,12 @@
 	
 	% --- Main Caption with ALL original text included ---
 	\caption{State variables over time for the horizontal and horizontal recovery scenarios. 
-		(a) Horizontal position ($x$) shows sustained lateral movement in a single direction. 
-		(b) Horizontal velocity ($\dot{x}$) variations in slope indicate acceleration and deceleration phases. 
-		(c) Vertical position ($y$) decreases initially then increases. 
-		(d) Vertical velocity ($\dot{y}$) negative values indicate descent and the zero crossing marks direction reversal. 
-		(e) Pitch angle ($\theta$) shows rapid attitude change followed by gradual stabilization. 
-		(f) Pitch rate ($\dot{\theta}$) is characterized by high initial rotation rates that later reduce in magnitude.}
+		(a) Horizontal position ($x$): shows sustained lateral movement in a single direction. 
+		(b) Horizontal velocity ($\dot{x}$): variations in slope indicate acceleration and deceleration phases. 
+		(c) Vertical position ($y$): decreases initially then increases. 
+		(d) Vertical velocity ($\dot{y}$): negative values indicate descent and the zero crossing marks direction reversal. 
+		(e) Pitch angle ($\theta$): shows rapid attitude change followed by gradual stabilization. 
+		(f) Pitch rate ($\dot{\theta}$): is characterized by high initial rotation rates that later reduce in magnitude.}
 	\label{fig:horizontal_scenario_grid}
 \end{figure}
 
@@ -512,12 +512,12 @@
 	
 	% --- Main Caption with ALL original text included ---
 	\caption{State variables over time for the roll scenario. 
-		(a) Horizontal position ($x$) decreases continuously, indicating motion opposite to the reference direction. 
-		(b) Horizontal velocity ($\dot{x}$) remains negative throughout, confirming persistent backward motion. 
-		(c) Vertical position ($y$) shows alternating ascent and descent with clear extrema. 
-		(d) Vertical velocity ($\dot{y}$) exhibits multiple zero crossings, indicating repeated reversals in vertical motion. 
-		(e) Pitch angle ($\theta$) exceeds $360^\circ$, confirming completion of a full rotational maneuver. 
-		(f) Pitch rate ($\dot{\theta}$) shows large positive values indicating rapid rotation and negative values marking deceleration.}
+		(a) Horizontal position ($x$): decreases continuously, indicating motion opposite to the reference direction. 
+		(b) Horizontal velocity ($\dot{x}$): remains negative throughout, confirming persistent backward motion. 
+		(c) Vertical position ($y$): shows alternating ascent and descent with clear extrema. 
+		(d) Vertical velocity ($\dot{y}$): exhibits multiple zero crossings, indicating repeated reversals in vertical motion. 
+		(e) Pitch angle ($\theta$): exceeds $360^\circ$, confirming completion of a full rotational maneuver. 
+		(f) Pitch rate ($\dot{\theta}$): shows large positive values indicating rapid rotation and negative values marking deceleration.}
 	\label{fig:roll_scenario_grid}
 \end{figure}
 
@@ -576,12 +576,12 @@
 	
 	% --- Main Caption (CMOS Requirement) ---
 	\caption{State variables over time for the fall scenario. 
-		(a) Horizontal position ($x$) shows continuous forward motion during descent. 
-		(b) Horizontal velocity ($\dot{x}$) increases almost linearly, indicating constant horizontal acceleration. 
-		(c) Vertical position ($y$) decreases to a minimum before slight recovery, marking the lowest altitude reached. 
-		(d) Vertical velocity ($\dot{y}$) is negative during free fall and approaching zero as recovery thrust is applied. 
-		(e) Pitch angle ($\theta$) shows progressive nose-down rotation caused by loss of vertical stability. 
-		(f) Pitch rate ($\dot{\theta}$) oscillates with sign changes that reflect alternating rotational actions due to the process noise.}
+		(a) Horizontal position ($x$): shows continuous forward motion during descent. 
+		(b) Horizontal velocity ($\dot{x}$): increases almost linearly, indicating constant horizontal acceleration. 
+		(c) Vertical position ($y$): decreases to a minimum before slight recovery, marking the lowest altitude reached. 
+		(d) Vertical velocity ($\dot{y}$): is negative during free fall and approaching zero as recovery thrust is applied. 
+		(e) Pitch angle ($\theta$): shows progressive nose-down rotation caused by loss of vertical stability. 
+		(f) Pitch rate ($\dot{\theta}$): oscillates with sign changes that reflect alternating rotational actions due to the process noise.}
 	\label{fig:fall_scenario_grid}
 \end{figure}
 
@@ -610,7 +610,7 @@
 \begin{figure}[H]
 \centering
 \includegraphics[width=0.8\linewidth]{estimation_errors-fall}
-\caption{Absolute estimation errors for all states over time (fall recovery scenario). Not explicitly rotating system, just like the basic scenario, shows varying accuracy of running mean. Although $y$ error is now bounded, error spikes of $\theta$ and $\dot{\theta}$ can't be ignored.}
+\caption{Absolute estimation errors for all states over time (fall recovery scenario). Not explicitly rotating system, just like the basic scenario, shows varying accuracy of running mean. Although $y$ error is now bounded, error spikes of $\theta$ and $\dot{\theta}$ cannot be ignored.}
 \label{fig:error-fall}
 \end{figure}
 
@@ -662,14 +662,14 @@
 \begin{figure}[H]
 \centering
 \includegraphics[width=0.7\linewidth]{rmse_growth_log-horizontal}
-\caption{RMSE growth for $x$ and $\dot{x}$ under increasing noise (log scale, horizontal recovery scenario). Complicated movement cases are harder for running mean to keep up with. Divergence of running mean happens significantly earlier compared to EKF.}
+\caption{RMSE growth for $x$ and $\dot{x}$ under increasing noise (log scale, horizontal recovery scenario). Complex dynamic maneuvers are difficult for the running mean filter to track. Divergence of running mean happens significantly earlier compared to EKF.}
 \label{fig:rmse-growth-log-horizontal}
 \end{figure}
 
 \begin{figure}[H]
 \centering
 \includegraphics[width=0.7\linewidth]{rmse_growth_log-roll}
-\caption{RMSE growth for $x$ and $\dot{x}$ under increasing noise (log scale, roll scenario). Another control-heavy case, another early running mean divergence. Interesting difference is early divergence of $\dot{x}$.}
+\caption{RMSE growth for $x$ and $\dot{x}$ under increasing noise (log scale, roll scenario). In this control-heavy scenario, the running mean diverges early once again. Interesting difference is early divergence of $\dot{x}$.}
 \label{fig:rmse-growth-log-roll}
 \end{figure}
 
@@ -736,11 +736,11 @@
 	To quantify the limits of stability, specific divergence thresholds were defined for each state variable. A filter is considered to have "diverged" when its Root Mean Square Error (RMSE) exceeds these pre-defined safety limits: $5.0 \text{ m}$ for horizontal position ($x$), $1.0 \text{ m/s}$ for horizontal velocity ($\dot{x}$), and $0.2$ for both vertical position ($y$) and vertical velocity ($\dot{y}$) (Appendix C, line 70). Tighter constraints were applied to the rotational states, with thresholds of $0.2 \text{ rad}$ for pitch angle ($\theta$) and $0.1 \text{ rad/s}$ for pitch rate ($\dot{\theta}$), reflecting the critical importance of attitude estimation for stable flight (Appendix C, line 70). The robustness loop iterates through increasing noise multipliers until these specific thresholds are breached, recording the multiplier value at which failure occurs (Appendix C, line 85).
 	
 	\subsection{Robustness Analysis Conclusions}
-	The response to increasing noise reveals a fundamental difference in filter architecture. As illustrated in the logarithmic growth plots (Figures \ref{fig:rmse-growth-log-basic}- \ref{fig:rmse-growth-log-fall}), the error in the EKF estimates grows linearly with the noise magnitude, maintaining stability even at high variance levels (figs. \ref{fig:rmse-ekf-basic} - \ref{fig:rmse-ekf-fall}). In contrast, the running mean filter exhibits early divergence, particularly for the horizontal states ($x$ and $\dot{x}$). In the "Horizontal Recovery" scenario, the running mean’s estimation of $\dot{x}$ diverges significantly earlier than the EKF (Figure \ref{fig:rmse-growth-log-horizontal}). This is attributed to the integration of noisy orientation data without covariance tracking; the EKF mitigates this by weighing the theoretical model against the noisy measurements via the Kalman Gain $K$ (Eq. \ref{eq:measurement_residual}-\ref{eq:K}, Appendix B, line 142). The linear scale plots (Figures \ref{fig:rmse-growth-linear-basic}-\ref{fig:rmse-growth-linear-fall}) further confirm that while observed states ($y, \theta$) are relatively resilient in both filters due to direct sensor updates, the EKF provides a necessary layer of filtering that prevents high-frequency noise from corrupting the velocity estimates. Ultimately, the EKF proves to be the robust solution required for the nonlinear dynamics of the planar quadrotor. However, it is important to acknowledge the fact that the filter was perfectly tuned in all the tested scenarios, implying that tuning is a key to robust performance.
+	The response to increasing noise reveals a fundamental difference in filter architecture. As illustrated in the logarithmic growth plots (Figures \ref{fig:rmse-growth-log-basic}- \ref{fig:rmse-growth-log-fall}), the error in the EKF estimates grows linearly with the noise magnitude, maintaining stability even at high variance levels (figs. \ref{fig:rmse-ekf-basic} - \ref{fig:rmse-ekf-fall}). In contrast, the running mean filter exhibits early divergence, particularly for the horizontal states ($x$ and $\dot{x}$). In the "Horizontal Recovery" scenario, the running mean’s estimation of $\dot{x}$ diverges significantly earlier than the EKF (Figure \ref{fig:rmse-growth-log-horizontal}). This is attributed to the integration of noisy orientation data without covariance tracking; the EKF mitigates this by weighing the theoretical model against the noisy measurements via the Kalman Gain $K$ (Eq. \ref{eq:measurement_residual}-\ref{eq:K}, Appendix B, line 142). The linear scale plots (Figures \ref{fig:rmse-growth-linear-basic}-\ref{fig:rmse-growth-linear-fall}) further confirm that while observed states ($y, \theta$) are relatively resilient in both filters due to direct sensor updates, the EKF provides a necessary layer of filtering that prevents high-frequency noise from corrupting the velocity estimates. Ultimately, the EKF proves to be the robust solution required for the nonlinear dynamics of the planar quadrotor. However, it is important to acknowledge that the filter was perfectly tuned in all the tested scenarios, implying that tuning is a key to robust performance.
 	
 	Seed 47 was used for any random number generation in the report. All code can be accessed at https://github.com/Arseni10Lk/Planar-Quadrotor
 	
-	\section{Team member Contribution}
+	\section{Team Member Contributions}
 	
 	\vspace{\baselineskip}
 	\subsection{Formal Roles}
@@ -755,13 +755,12 @@
 	\noindent Arseni Lysak: 
 	\begin{itemize}
 		\item Task assignment, deadline setting and organization.
-		\item Providing assistance with Github, Git, MATLAB and LaTeX.
-		\item Work review and corrections.
-		\item Real and Clean Simulation code with error calculation (but not RMSE).
-		\item Finalization of EKF implementation.
-		\item Adjustment and correction of critical mistakes inthe plotting functions for Simulation and Robustness Testing.
-		\item Finalization of the Running Mean filter implementation.
-		\item Report writing.
+		\item Technical assistance with GitHub, Git, MATLAB, and LaTeX.
+		\item Work review and quality assurance.
+		\item Implementation of Real and Clean simulation code with error calculation (but not RMSE).
+		\item Finalization of the EKF and Running Mean filter implementations.
+		\item Adjustment and correction of critical mistakes in the plotting functions for simulation and robustness testing.
+		\item Report writing and editing.
 	\end{itemize}
 	Tsimafei Iliusenka:
 	\begin{itemize}
@@ -770,7 +769,7 @@
 		\item Control inputs 2-4 design.
 		\item Presentation template research.
 		\item Presentation Design verification.
-		\item \textbf{Always} delivering before the deadline.
+		\item \textbf{Always} delivered before the deadline.
 	\end{itemize}
 	John Elvin Ndahiro: 
 	\begin{itemize}
@@ -832,7 +831,7 @@ A = [0  1  0  0   0   0;
 0  0  0  0   0   1;
 0  0  0  0   0   0];
 
-% It desscribes the states, so let's say it is rotor data 
+% It describes the states, so let's say it is rotor data 
 rotor_data.A = A;
 
 % C matrix - Measurements
@@ -872,7 +871,7 @@ end
 CU5 = zeros(size(time));
 CU6 = zeros(size(time));
 
-for t = 0:199 % iniiate roll
+for t = 0:199 % initiate roll
 CU5(t + 1) = u1 * 0.808 * (1 + 0.001*cos(2 * 0.01 * t));
 CU6(t + 1) = u2 * 0.8 * (1 + 0.001*sin(2 * 0.01 * t));
 end 
