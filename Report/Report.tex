@@ -105,7 +105,7 @@
 			u_1 \\ u_2
 		\end{bmatrix}
 	\end{equation}
-	
+
 	\noindent To complete the system model, the observation vector $\mathbf{z}$ is defined based on the onboard sensors. It is important to note that while a real-world \textbf{Inertial Measurement Unit (IMU)} measures linear acceleration and angular velocity—requiring fusion algorithms to estimate orientation—this simulation adopts a simplification where the IMU directly provides the pitch angle ($\theta$) and pitch rate ($\dot{\theta}$). Combined with an \textbf{altimeter} that measures vertical position ($y$), the observation model becomes a linear mapping of the state vector:
 	
 	\begin{equation}
@@ -127,7 +127,7 @@
 	
 	\section{Quadcopter Definition}
 	
-	The quadrotor system parameters were initialized with a mass $m = 0.5 \text{ kg}$, a rotor arm length $r = 0.15 \text{ m}$, and a moment of inertia $I = 0.005 \text{ kg} \cdot \text{m}^2$. The simulation utilizes a time step of $dt = 0.01 \text{ s}$ under standard gravitational acceleration $g = 9.81 \text{ m/s}^2$2. The initial conditions for the simulation were set with an orientation angle $\theta = 0 \text{ rad}$, and baseline rotor thrust forces $u_1 = 5 \text{ N}$ and $u_2 = 5 \text{ N}$ (Appendix A, lines 8-15).
+	The quadrotor system parameters were initialized with a mass $m = 0.5 \text{ kg}$, a rotor arm length $r = 0.15 \text{ m}$, and a moment of inertia $I = 0.005 \text{ kg} \cdot \text{m}^2$. The simulation utilizes a time step of $dt = 0.01 \text{ s}$ under standard gravitational acceleration $g = 9.81 \text{ m/s}^2$. Baseline rotor thrust forces are $u_1 = 5 \text{ N}$ and $u_2 = 5 \text{ N}$ (Appendix A, lines 8-15).
 	
 	Four scenarios for control inputs were chosen (Appendix A, lines 53-96): 
 	
@@ -155,7 +155,7 @@
 	\begin{enumerate}
 		\item Zero velocity in both directions, system is 1 m above the ground, no rotation.
 		\item The system is assumed to have a horizontal speed of 3 m/s at 10 m altitude, rotors' thrust is parallel to the ground.
-		\item To make the long rotation possible, high vertical speed and altitude (5 m/s and 50 m respectively) are assumed. No initial rotational speed or system tilt.
+		\item High vertical speed and altitude (5 m/s and 50 m respectively) are assumed. No initial rotational speed, system tilt or horizontal speed.
 		\item Negative horizontal and vertical velocities (-1 m/s and -3 m/s respectively), altitude of 15 m. Quadrotor system is initially tilted down by around 18 degrees to align rotor thrust direction with total velocity vector.
 	\end{enumerate}
 
@@ -218,7 +218,7 @@
 		\item $\mathbf{x}_k$ is the state vector at time step $k$,
 		\item $\mathbf{z}_k$ is the measurement vector,
 		\item $\mathbf{u}_k$ is the control input vector,
-		\item $\mathbf{w}_k$ and $\mathbf{v}_k$ are the process and measurement noise vectors.
+		\item $\mathbf{w}_k$ and $\mathbf{v}_k$ are the process and measurement noise vectors respectively.
 	\end{itemize}
 	
 	\noindent To linearize the estimate for covariance propagation, the Jacobian matrices $\mathbf{F}$ and $\mathbf{H}$ have to be computed:
@@ -608,7 +608,7 @@
 \begin{figure}[H]
 \centering
 \includegraphics[width=0.8\linewidth]{estimation_errors-basic}
-\caption{Absolute estimation errors for all states over time (basic scenario), comparing EKF and running mean filters. While some states show varying benefit of EKF over running mean ($x$, $\dot{x}$, $\dot{y}$), and others show significant error spikes of running mean ($\theta$, $\dot{\theta}$), $y$ in particular displays constant growth of its error, while EKF keeps almost constant.}
+\caption{Absolute estimation errors for all states over time (basic scenario), comparing EKF and running mean filters. While some states show varying benefit of EKF over running mean ($x$, $\dot{x}$, $\dot{y}$), and others show significant error spikes of running mean ($\theta$, $\dot{\theta}$), $y$ in particular displays constant growth of running mean error, while its EKF error stays almost constant.}
 \label{fig:error-basic}
 \end{figure}
 
@@ -652,7 +652,7 @@
 \begin{figure}[H]
 \centering
 \includegraphics[width=0.7\linewidth]{robustness_rmse-horizontal}
-\caption{EKF RMSE across four noise levels for each state (horizontal recovery scenario). As expected, $x$ is still different from the rest, for the same reasons as described in Figure \ref{fig:rmse-ekf-basic} description. Maximum RMSE values have grown compared to the basic cases because of the increased movement complexity.}
+\caption{EKF RMSE across four noise levels for each state (horizontal recovery scenario). As expected, $x$ is still different from the rest, for the same reasons as described in Figure \ref{fig:rmse-ekf-basic} description. Maximum RMSE values have grown compared to the basic case because of the increased movement complexity.}
 \label{fig:rmse-ekf-horizontal}
 \end{figure}
 
@@ -703,7 +703,7 @@
 \begin{figure}[H]
 \centering
 \includegraphics[width=0.75\linewidth]{rmse_growth_linear-basic}
-\caption{RMSE growth for $y$, $\dot{y}$, $\theta$, and $\dot{\theta}$ under increasing noise (linear scale, basic scenario). Unlike the significant error growth of $x$ and $\dot{x}$, other system parameters RMSE growth can be displayed linearly. Measured parameters of the system have significantly higher variance multiplier required for divergence.}
+\caption{RMSE growth for $y$, $\dot{y}$, $\theta$, and $\dot{\theta}$ under increasing noise (linear scale, basic scenario). Unlike the log scale of $x$ and $\dot{x}$, other system parameters RMSE growth can be displayed on a linear scale. Measured parameters of the system have significantly higher variance multiplier required for divergence.}
 \label{fig:rmse-growth-linear-basic}
 \end{figure}
 
@@ -717,7 +717,7 @@
 \begin{figure}[H]
 \centering
 \includegraphics[width=0.75\linewidth]{rmse_growth_linear-roll}
-\caption{RMSE growth for $y$, $\dot{y}$, $\theta$, and $\dot{\theta}$ under increasing noise (linear scale, roll scenario). Another case, another running mean multiplier change, EKF stable as in the two previous examples (figs. \ref{fig:rmse-growth-linear-basic}, \ref{fig:rmse-growth-linear-horizontal})}
+\caption{RMSE growth for $y$, $\dot{y}$, $\theta$, and $\dot{\theta}$ under increasing noise (linear scale, roll scenario). Another case, another running mean multiplier change, EKF is stable as in the two previous examples (figs. \ref{fig:rmse-growth-linear-basic}, \ref{fig:rmse-growth-linear-horizontal})}
 \label{fig:rmse-growth-linear-roll}
 \end{figure}
 
@@ -755,7 +755,7 @@
 	To quantify the limits of stability, specific divergence thresholds were defined for each state variable. A filter is considered to have "diverged" when its Root Mean Square Error (RMSE) exceeds these pre-defined safety limits: $5.0 \text{ m}$ for horizontal position ($x$), $1.0 \text{ m/s}$ for horizontal velocity ($\dot{x}$), and $0.2$ for both vertical position ($y$) and vertical velocity ($\dot{y}$) (Appendix C, line 70). Tighter constraints were applied to the rotational states, with thresholds of $0.2 \text{ rad}$ for pitch angle ($\theta$) and $0.1 \text{ rad/s}$ for pitch rate ($\dot{\theta}$), reflecting the critical importance of attitude estimation for stable flight (Appendix C, line 70). The robustness loop iterates through increasing noise multipliers until these specific thresholds are breached, recording the multiplier value at which failure occurs (Appendix C, line 85).
 	
 	\subsection{Robustness Analysis Conclusions}
-	The response to increasing noise reveals a fundamental difference in filter architecture. As illustrated in the logarithmic growth plots (Figures \ref{fig:rmse-growth-log-basic}- \ref{fig:rmse-growth-log-fall}), the error in the EKF estimates grows linearly with the noise magnitude, maintaining stability even at high variance levels (figs. \ref{fig:rmse-ekf-basic} - \ref{fig:rmse-ekf-fall}). In contrast, the running mean filter exhibits early divergence, particularly for the horizontal states ($x$ and $\dot{x}$). In the "Horizontal Recovery" scenario, the running mean’s estimation of $\dot{x}$ diverges significantly earlier than the EKF (Figure \ref{fig:rmse-growth-log-horizontal}). This is attributed to the integration of noisy orientation data without covariance tracking; the EKF mitigates this by weighing the theoretical model against the noisy measurements via the Kalman Gain $K$ (Eq. \ref{eq:measurement_residual}-\ref{eq:K}, Appendix B, line 142). The linear scale plots (Figures \ref{fig:rmse-growth-linear-basic}-\ref{fig:rmse-growth-linear-fall}) further confirm that while observed states ($y, \theta$) are relatively resilient in both filters due to direct sensor updates, the EKF provides a necessary layer of filtering that prevents high-frequency noise from corrupting the velocity estimates. Ultimately, the EKF proves to be the robust solution required for the nonlinear dynamics of the planar quadrotor. However, it is important to acknowledge that the filter was perfectly tuned in all the tested scenarios, implying that tuning is a key to robust performance.
+	The response to increasing noise reveals a fundamental difference in filter architecture. As illustrated in the logarithmic growth plots (Figures \ref{fig:rmse-growth-log-basic}- \ref{fig:rmse-growth-log-fall}), the error in the EKF estimates grows with the noise magnitude, maintaining stability even at high variance levels (figs. \ref{fig:rmse-ekf-basic} - \ref{fig:rmse-ekf-fall}). In contrast, the running mean filter exhibits early divergence, particularly for the horizontal states ($x$ and $\dot{x}$). In the "Horizontal Recovery" scenario, the running mean’s estimation of $\dot{x}$ diverges significantly earlier than the EKF (Figure \ref{fig:rmse-growth-log-horizontal}). This is attributed to the integration of noisy orientation data without covariance tracking; the EKF mitigates this by weighing the theoretical model against the noisy measurements via the Kalman Gain $K$ (Eq. \ref{eq:measurement_residual}-\ref{eq:K}, Appendix B, line 142). The linear scale plots (Figures \ref{fig:rmse-growth-linear-basic}-\ref{fig:rmse-growth-linear-fall}) further confirm that while observed states ($y, \theta$) are relatively resilient in both filters due to direct sensor updates, the EKF provides a necessary layer of filtering that prevents high-frequency noise from corrupting the velocity estimates. Ultimately, the EKF proves to be the robust solution required for the nonlinear dynamics of the planar quadrotor. However, it is important to acknowledge that the filter was perfectly tuned in all the tested scenarios, implying that tuning is a key to robust performance.
 	
 	Seed 47 was used for any random number generation in the report. All code can be accessed at https://github.com/Arseni10Lk/Planar-Quadrotor
 	
