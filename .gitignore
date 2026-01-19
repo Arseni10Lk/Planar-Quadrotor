@@ -45,6 +45,5 @@ codegen/
 *.blg
 *.bbl
 *.log
-*.pdf
 *.run.xml
 *.synctex.gz
