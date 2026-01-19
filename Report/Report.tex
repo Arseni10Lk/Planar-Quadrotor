@@ -745,6 +745,8 @@
 	\subsection{Robustness Testing Methodology}
 	To evaluate the stability of the estimators under adverse conditions, a robustness analysis was conducted by systematically increasing the process and measurement noise levels. The testing procedure, implemented in robustness.m (Appendix C), applies a scalar multiplier to the baseline noise variances defined in the simulation (Appendix A, lines 112-113). The multiplier ranges from $0.2\times$ to $50\times$ the nominal values, effectively simulating sensor degradation and increasing environmental turbulence (Appendix C, lines 44-45).
 	
+	To quantify the limits of stability, specific divergence thresholds were defined for each state variable. A filter is considered to have "diverged" when its Root Mean Square Error (RMSE) exceeds these pre-defined safety limits: $5.0 \text{ m}$ for horizontal position ($x$), $1.0 \text{ m/s}$ for horizontal velocity ($\dot{x}$), and $0.2$ for both vertical position ($y$) and vertical velocity ($\dot{y}$) (Appendix C, line 70). Tighter constraints were applied to the rotational states, with thresholds of $0.2 \text{ rad}$ for pitch angle ($\theta$) and $0.1 \text{ rad/s}$ for pitch rate ($\dot{\theta}$), reflecting the critical importance of attitude estimation for stable flight (Appendix C, line 70). The robustness loop iterates through increasing noise multipliers until these specific thresholds are breached, recording the multiplier value at which failure occurs (Appendix C, line 85).
+	
 	\subsection{Robustness Analysis Conclusions}
 	The response to increasing noise reveals a fundamental difference in filter architecture. As illustrated in the logarithmic growth plots (Figures \ref{fig:rmse-growth-log-basic}- \ref{fig:rmse-growth-log-fall}), the error in the EKF estimates grows linearly with the noise magnitude, maintaining stability even at high variance levels. In contrast, the running mean filter exhibits early divergence, particularly for the horizontal states ($x$ and $\dot{x}$).In the "Horizontal Recovery" scenario, the running mean’s estimation of $\dot{x}$ diverges significantly earlier than the EKF (Figure \ref{fig:rmse-growth-log-horizontal}). This is attributed to the integration of noisy orientation data without covariance tracking; the EKF mitigates this by weighing the theoretical model against the noisy measurements via the Kalman Gain $K$ (Eq. \ref{eq:measurement_residual}-\ref{eq:K}, Appendix B, line 142). The linear scale plots (Figures \ref{fig:rmse-growth-linear-basic}-\ref{fig:rmse-growth-linear-fall}) further confirm that while observed states ($y, \theta$) are relatively resilient in both filters due to direct sensor updates, the EKF provides a necessary layer of filtering that prevents high-frequency noise from corrupting the velocity estimates. Ultimately, the EKF proves to be the robust solution required for the nonlinear dynamics of the planar quadrotor. However, it is important to acknowledge the fact that the filter was perfectly tuned in all the tested scenarios, implying that tuning is a key to robust performance.
 	
@@ -752,7 +754,53 @@
 	
 	\section{Team member Contribution}
 	
-	I will add it later, just wanted to see if there is anything to correct before the final submission
+	\vspace{\baselineskip}
+	\subsection{Formal Roles}
+	Arseni Lysak - Lead \\
+	Tsimafei Iliusenka - System Modeling \& Simulation Specialist \\
+	John Elvin Ndahiro - Presentation \& Demonstration Specialist\\
+	Pablo Calderon Mateo - Technical Engineer\\
+	
+	
+	\subsection{Actual Tasks}
+	
+	\noindent Arseni Lysak: 
+	\begin{itemize}
+		\item Task assignment, deadline setting and organization.
+		\item Assistance with Github, Git, MATLAB and LaTeX.
+		\item Work review and corrections.
+		\item Real and Clean Simulation code with error calculation (but not RMSE).
+		\item Finalization of EKF implementation.
+		\item Adjustment and correction of critical mistakes inthe plotting functions for Simulation and Robustness Testing.
+		\item Finalization of the Running Mean filter implementation.
+		\item Report writing.
+	\end{itemize}
+	Tsimafei Iliusenka:
+	\begin{itemize}
+		\item Analytical solution to find Jacobian.
+		\item Initial Extended Kalman filter design in code.
+		\item Control inputs 2-4 design.
+		\item Presentation template research.
+		\item Presentation Design verification.
+		\item \textbf{Always} delivering before the deadline.
+	\end{itemize}
+	John Elvin Ndahiro: 
+	\begin{itemize}
+		\item Initial ReadMe file writing.
+		\item Research to define typical physical parameters of a drone.
+		\item Control input 1 design.
+		\item Initial plotting functions for the simulation.
+		\item Final plotting functions for Simulation and Robustness Testing.
+	\end{itemize}
+	Pablo Calderon Mateo:
+	\begin{itemize}
+		\item System definition in code.
+		\item RMSE computation.
+		\item Initial Robustness Testing System design.
+		\item Base Noise Variance selection.
+		\item Design of a running mean filter template.
+		\item Presentation Design.
+	\end{itemize}
 	
 	\printbibliography
 	\newpage
