@@ -114,10 +114,8 @@ noise_data.output_noise_amp = 0.01;
 
 %% STEP 7: SIMULATION
 
-%% STEP 7: SIMULATION
-
 % Define the test case name here (e.g., 'fall', 'basic', 'roll', 'horizontal')
-current_case = 'horizontal'; 
+current_case = 'roll'; 
 
 [states, output, error] = simulation_quadrotor(rotor_data, control_input.(current_case), noise_data, time, initial_state.(current_case));
 
@@ -126,6 +124,6 @@ current_case = 'horizontal';
 
 % New functions with saving logic:
 % Pass 'current_case' to save files with that specific name
-plot_robustness_separate_windows(rmse_mat, noise_mat, div_data, current_case);
+% plot_robustness_separate_windows(rmse_mat, noise_mat, div_data, current_case);
 
 plot_quadrotor_separate_windows(time, states, output, C, error, current_case);
